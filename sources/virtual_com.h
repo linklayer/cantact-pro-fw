@@ -37,7 +37,7 @@
 /*******************************************************************************
 * Definitions
 ******************************************************************************/
-#define TX_FRAME_BUF_SIZE 100
+#define TX_FRAME_BUF_SIZE 5000
 
 #if defined(USB_DEVICE_CONFIG_EHCI) && (USB_DEVICE_CONFIG_EHCI > 0)
 #define CONTROLLER_ID kUSB_ControllerEhci0

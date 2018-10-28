@@ -294,7 +294,13 @@ int rx_enqueue(uint8_t channel, mcan_rx_buffer_frame_t *frame) {
 	// echo id -1 for normal rx
 	rx_frames[rx_frames_index].echo_id = -1;
 	rx_frames[rx_frames_index].channel = channel;
-	rx_frames[rx_frames_index].can_id = (frame->id) >> STDID_OFFSET;
+	if (frame->xtd) {
+		// extended ID, add extended bit
+		rx_frames[rx_frames_index].can_id = (frame->id) | 0x80000000;
+	} else {
+		// standard ID, bit shift
+		rx_frames[rx_frames_index].can_id = (frame->id) >> STDID_OFFSET;
+	}
 	rx_frames[rx_frames_index].can_dlc = frame->dlc;
 	memcpy(rx_frames[rx_frames_index].data, frame->data, frame->dlc);
 	rx_frames_index++;

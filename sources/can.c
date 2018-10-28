@@ -157,11 +157,21 @@ int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc, uin
 
     MCAN_TransferCreateHandle(can_dev, &handle, NULL, NULL);
 
-    frame.id = can_id << STDID_OFFSET;
+    // check extended bit
+    if (can_id & 0x80000000) {
+    	// extended frame, remove extended bit
+    	frame.id = can_id & 0x7FFFFFFF;
+    	frame.xtd = kMCAN_FrameIDExtend;
+    } else {
+    	// standard ID, bit shift for MCAN FIFO
+    	frame.id = can_id << STDID_OFFSET;
+    	frame.xtd = kMCAN_FrameIDStandard;
+    }
+
     frame.dlc = can_dlc;
     frame.size = can_dlc;
     frame.data = can_data;
-    frame.xtd = kMCAN_FrameIDStandard;
+
     frame.rtr = kMCAN_FrameTypeData;
     frame.fdf = 0;
     frame.brs = 0;
