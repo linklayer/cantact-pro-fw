@@ -34,11 +34,30 @@
 #ifndef _USB_DEVICE_DESCRIPTOR_H_
 #define _USB_DEVICE_DESCRIPTOR_H_ 1
 
+#include "usb_device_class.h"
+
 /*******************************************************************************
 * Definitions
 ******************************************************************************/
 #define USB_DEVICE_SPECIFIC_BCD_VERSION (0x0200)
 #define USB_DEVICE_DEMO_BCD_VERSION (0x0101U)
+
+// gs_usb defines
+#define CAN_DATA_MAX_PACKET_SIZE   512  /* Endpoint IN & OUT Packet size */
+#define CAN_CMD_PACKET_SIZE        64  /* Control Endpoint Packet size */
+
+#define USB_CAN_VID                     0x1d50
+#define USB_CAN_PID                     0x606f
+#define USB_CAN_INTERFACE_COUNT 		2
+
+#define GSUSB_ENDPOINT_IN          0x81
+#define GSUSB_ENDPOINT_OUT         0x02
+
+#define USB_GS_USB_INTERFACE_COUNT 0x01
+#define USB_GS_USB_CONFIGURE_INDEX 0x01
+#define USB_GS_USB_INTERFACE_INDEX 0x00
+#define USB_GS_USB_ENDPOINT_COUNT 0x02
+#define USB_DESCRIPTOR_LENGTH_GS_USB_EP 0x07
 
 /* Communication  Class Codes */
 #define CDC_COMM_CLASS (0x02)
@@ -127,12 +146,12 @@
 
 #define USB_CDC_VCOM_CONFIGURE_INDEX (1)
 
-#define USB_CDC_VCOM_ENDPOINT_CIC_COUNT (1)
+#define USB_CDC_VCOM_ENDPOINT_CIC_COUNT (0)
 #define USB_CDC_VCOM_ENDPOINT_DIC_COUNT (2)
 #define USB_CDC_VCOM_INTERRUPT_IN_ENDPOINT (1)
 #define USB_CDC_VCOM_BULK_IN_ENDPOINT (2)
 #define USB_CDC_VCOM_BULK_OUT_ENDPOINT (3)
-#define USB_CDC_VCOM_INTERFACE_COUNT (2)
+#define USB_CDC_VCOM_INTERFACE_COUNT (1)
 #define USB_CDC_VCOM_COMM_INTERFACE_INDEX (0)
 #define USB_CDC_VCOM_DATA_INTERFACE_INDEX (1)
 
@@ -155,9 +174,9 @@
 #define USB_DESCRIPTOR_TYPE_CDC_CS_ENDPOINT (0x25)
 
 /* Class code. */
-#define USB_DEVICE_CLASS (0x02)
-#define USB_DEVICE_SUBCLASS (0x00)
-#define USB_DEVICE_PROTOCOL (0x00)
+#define USB_DEVICE_CLASS (0xFF)
+#define USB_DEVICE_SUBCLASS (0xFF)
+#define USB_DEVICE_PROTOCOL (0xFF)
 
 #define USB_DEVICE_MAX_POWER (0x32)
 
