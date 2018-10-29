@@ -21,6 +21,7 @@
 #include "can.h"
 #include "usb_device_descriptor.h"
 #include "gs_usb_class.h"
+#include "main.h"
 
 /*******************************************************************************
 * Variables
@@ -62,9 +63,7 @@ static const struct gs_device_bt_const can_dev_bt_const = {
 /* Data buffer for receiving and sending*/
 USB_DMA_INIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE)
 static uint8_t s_currRecvBuf[DATA_BUFF_SIZE];
-volatile static uint32_t s_recvSize = 0;
-volatile static uint32_t s_sendSize = 0;
-static uint32_t s_usbBulkMaxPacketSize = FS_CDC_VCOM_BULK_OUT_PACKET_SIZE;
+static uint32_t s_usbBulkMaxPacketSize = FS_GS_USB_BULK_OUT_PACKET_SIZE;
 
 // buffer for incoming setup control requests
 static uint8_t setup_out[CAN_CMD_PACKET_SIZE];
@@ -90,6 +89,57 @@ void USB0_IRQHandler(void)
 void USB1_IRQHandler(void)
 {
     USB_DeviceLpcIp3511IsrFunction(s_usb_can.deviceHandle);
+}
+#endif
+
+void USB_DeviceClockInit(void)
+{
+#if defined(USB_DEVICE_CONFIG_LPCIP3511FS) && (USB_DEVICE_CONFIG_LPCIP3511FS > 0U)
+    /* enable USB IP clock */
+    CLOCK_EnableUsbfs0DeviceClock(kCLOCK_UsbSrcFro, CLOCK_GetFroHfFreq());
+#if defined(FSL_FEATURE_USB_USB_RAM) && (FSL_FEATURE_USB_USB_RAM)
+    for (int i = 0; i < FSL_FEATURE_USB_USB_RAM; i++)
+    {
+        ((uint8_t *)FSL_FEATURE_USB_USB_RAM_BASE_ADDRESS)[i] = 0x00U;
+    }
+#endif
+
+#endif
+#if defined(USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS > 0U)
+    /* enable USB IP clock */
+    CLOCK_EnableUsbhs0DeviceClock(kCLOCK_UsbSrcUsbPll, 0U);
+#if defined(FSL_FEATURE_USBHSD_USB_RAM) && (FSL_FEATURE_USBHSD_USB_RAM)
+    for (int i = 0; i < FSL_FEATURE_USBHSD_USB_RAM; i++)
+    {
+        ((uint8_t *)FSL_FEATURE_USBHSD_USB_RAM_BASE_ADDRESS)[i] = 0x00U;
+    }
+#endif
+#endif
+}
+void USB_DeviceIsrEnable(void)
+{
+    uint8_t irqNumber;
+#if defined(USB_DEVICE_CONFIG_LPCIP3511FS) && (USB_DEVICE_CONFIG_LPCIP3511FS > 0U)
+    uint8_t usbDeviceIP3511Irq[] = USB_IRQS;
+    irqNumber = usbDeviceIP3511Irq[CONTROLLER_ID - kUSB_ControllerLpcIp3511Fs0];
+#endif
+#if defined(USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS > 0U)
+    uint8_t usbDeviceIP3511Irq[] = USBHSD_IRQS;
+    irqNumber = usbDeviceIP3511Irq[CONTROLLER_ID - kUSB_ControllerLpcIp3511Hs0];
+#endif
+/* Install isr, set priority, and enable IRQ. */
+    NVIC_SetPriority((IRQn_Type)irqNumber, USB_DEVICE_INTERRUPT_PRIORITY);
+    EnableIRQ((IRQn_Type)irqNumber);
+}
+#if USB_DEVICE_CONFIG_USE_TASK
+void USB_DeviceTaskFn(void *deviceHandle)
+{
+#if defined(USB_DEVICE_CONFIG_LPCIP3511FS) && (USB_DEVICE_CONFIG_LPCIP3511FS > 0U)
+    USB_DeviceLpcIp3511TaskFunction(deviceHandle);
+#endif
+#if defined(USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS > 0U)
+    USB_DeviceLpcIp3511TaskFunction(deviceHandle);
+#endif
 }
 #endif
 
@@ -316,12 +366,12 @@ usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event, void *
             {
                 s_usb_can.attach = 1;
                 s_usb_can.currentConfiguration = *temp8;
-                if (USB_CDC_VCOM_CONFIGURE_INDEX == (*temp8))
+                if (USB_GS_USB_CONFIGURE_INDEX == (*temp8))
                 {
                     usb_device_endpoint_init_struct_t epInitStruct;
                     usb_device_endpoint_callback_struct_t endpointCallback;
 
-                    /* Initiailize endpoints for bulk pipe */
+                    /* initialize endpoints for bulk pipe */
                     endpointCallback.callbackFn = USB_DeviceBulkIn;
                     endpointCallback.callbackParam = handle;
 
@@ -331,11 +381,11 @@ usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event, void *
 
                     if (USB_SPEED_HIGH == s_usb_can.speed)
                     {
-                        epInitStruct.maxPacketSize = HS_CDC_VCOM_BULK_IN_PACKET_SIZE;
+                        epInitStruct.maxPacketSize = HS_GS_USB_BULK_IN_PACKET_SIZE;
                     }
                     else
                     {
-                        epInitStruct.maxPacketSize = FS_CDC_VCOM_BULK_IN_PACKET_SIZE;
+                        epInitStruct.maxPacketSize = FS_GS_USB_BULK_IN_PACKET_SIZE;
                     }
 
                     USB_DeviceInitEndpoint(s_usb_can.deviceHandle, &epInitStruct, &endpointCallback);
@@ -348,22 +398,22 @@ usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event, void *
                     epInitStruct.endpointAddress = GSUSB_ENDPOINT_OUT;
                     if (USB_SPEED_HIGH == s_usb_can.speed)
                     {
-                        epInitStruct.maxPacketSize = HS_CDC_VCOM_BULK_OUT_PACKET_SIZE;
+                        epInitStruct.maxPacketSize = HS_GS_USB_BULK_OUT_PACKET_SIZE;
                     }
                     else
                     {
-                        epInitStruct.maxPacketSize = FS_CDC_VCOM_BULK_OUT_PACKET_SIZE;
+                        epInitStruct.maxPacketSize = FS_GS_USB_BULK_OUT_PACKET_SIZE;
                     }
 
                     USB_DeviceInitEndpoint(s_usb_can.deviceHandle, &epInitStruct, &endpointCallback);
 
                     if (USB_SPEED_HIGH == s_usb_can.speed)
                     {
-                        s_usbBulkMaxPacketSize = HS_CDC_VCOM_BULK_OUT_PACKET_SIZE;
+                        s_usbBulkMaxPacketSize = HS_GS_USB_BULK_OUT_PACKET_SIZE;
                     }
                     else
                     {
-                        s_usbBulkMaxPacketSize = FS_CDC_VCOM_BULK_OUT_PACKET_SIZE;
+                        s_usbBulkMaxPacketSize = FS_GS_USB_BULK_OUT_PACKET_SIZE;
                     }
                     /* Schedule buffer for receive */
                     USB_DeviceRecvRequest(handle, GSUSB_ENDPOINT_OUT, s_currRecvBuf,
@@ -423,7 +473,7 @@ void gs_usb_init()
     }
     else
     {
-        usb_echo("USB device CDC virtual com demo\r\n");
+        usb_echo("CANtact Pro USB started\r\n");
     }
 
     USB_DeviceIsrEnable();

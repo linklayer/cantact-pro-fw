@@ -4,19 +4,18 @@
  */
 
 #include "can.h"
+#include "main.h"
 
 #define MCAN0_CLK_FREQ CLOCK_GetFreq(kCLOCK_MCAN0)
 #define MCAN1_CLK_FREQ CLOCK_GetFreq(kCLOCK_MCAN1)
 
-#define CAN_RAM_BASE 		0x20010000U
-//#define CAN0_RAM_BASE		CAN_RAM_BASE
-//#define CAN1_RAM_BASE		(CAN0_RAM_BASE + 0x400U)
-#define CAN0_STD_FILTER_OFS 0x00
-#define CAN0_RX_FIFO0_OFS 	0x10
-#define CAN0_TX_BUFFER_OFS 	0x20
-#define CAN1_STD_FILTER_OFS 0x100
-#define CAN1_RX_FIFO0_OFS 	0x110
-#define CAN1_TX_BUFFER_OFS 	0x120
+#define CAN_RAM_BASE 			0x20010000U
+#define CAN0_STD_FILTER_OFS 	0x00
+#define CAN0_RX_FIFO0_OFS 		0x10
+#define CAN0_TX_BUFFER_OFS 		0x20
+#define CAN1_STD_FILTER_OFS 	0x100
+#define CAN1_RX_FIFO0_OFS 		0x110
+#define CAN1_TX_BUFFER_OFS 		0x120
 
 static CAN_Type* can_devs[CAN_NUM_CHANNELS] = {
 	CAN0,
@@ -50,7 +49,8 @@ void CAN1_IRQ0_IRQHandler(void)
 	}
 }
 
-int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
+int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config)
+{
 	CAN_Type* can_dev;
 
     if (channel >= CAN_NUM_CHANNELS) {
@@ -64,7 +64,8 @@ int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
     return 0;
 }
 
-int can_start(uint8_t channel) {
+int can_start(uint8_t channel)
+{
 	mcan_config_t config;
     mcan_rx_fifo_config_t rxFifo0;
     mcan_tx_buffer_config_t txBuffer;
@@ -130,7 +131,8 @@ int can_start(uint8_t channel) {
     return 0;
 }
 
-int can_stop(uint8_t channel) {
+int can_stop(uint8_t channel)
+{
 	CAN_Type* can_dev;
 
     if (channel >= CAN_NUM_CHANNELS) {
@@ -143,7 +145,8 @@ int can_stop(uint8_t channel) {
     return 0;
 }
 
-int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc, uint8_t *can_data) {
+int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc, uint8_t *can_data)
+{
 	CAN_Type* can_dev;
 	mcan_handle_t handle;
 	mcan_buffer_transfer_t xfer;
