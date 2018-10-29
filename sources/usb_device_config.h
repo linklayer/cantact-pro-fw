@@ -36,8 +36,8 @@
 #define _USB_DEVICE_CONFIG_H_
 
 /*******************************************************************************
-* Definitions
-******************************************************************************/
+ * Definitions
+ ******************************************************************************/
 /*!
  * @addtogroup usb_device_configuration
  * @{
@@ -119,7 +119,7 @@
 #define USB_DEVICE_CONFIG_CV_TEST (0U)
 
 /*! @brief Whether device compliance test is enabled. If the macro is enabled,
-    the test mode and CV test macroes will be set.*/
+ the test mode and CV test macroes will be set.*/
 #define USB_DEVICE_CONFIG_COMPLIANCE_TEST (0U)
 
 #if ((defined(USB_DEVICE_CONFIG_COMPLIANCE_TEST)) && (USB_DEVICE_CONFIG_COMPLIANCE_TEST > 0U))

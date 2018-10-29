@@ -36,8 +36,7 @@ enum gs_can_state {
 };
 
 enum gs_can_identify_mode {
-	GS_CAN_IDENTIFY_OFF = 0,
-	GS_CAN_IDENTIFY_ON
+	GS_CAN_IDENTIFY_OFF = 0, GS_CAN_IDENTIFY_ON
 };
 
 /* data types passed between host and device */

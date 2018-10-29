@@ -37,8 +37,8 @@
 #include "usb_device_class.h"
 
 /*******************************************************************************
-* Definitions
-******************************************************************************/
+ * Definitions
+ ******************************************************************************/
 #define USB_DEVICE_SPECIFIC_BCD_VERSION (0x0200)
 #define USB_DEVICE_DEMO_BCD_VERSION (0x0101U)
 
@@ -89,8 +89,8 @@
 #define USB_DEVICE_MAX_POWER 	0x32
 
 /*******************************************************************************
-* API
-******************************************************************************/
+ * API
+ ******************************************************************************/
 /*!
  * @brief USB device set speed function.
  *
@@ -120,7 +120,7 @@ extern usb_status_t USB_DeviceSetSpeed(usb_device_handle handle, uint8_t speed);
  * @return A USB error code or kStatus_USB_Success.
  */
 extern usb_status_t USB_DeviceGetDeviceDescriptor(usb_device_handle handle,
-                                                  usb_device_get_device_descriptor_struct_t *deviceDescriptor);
+		usb_device_get_device_descriptor_struct_t *deviceDescriptor);
 /*!
  * @brief USB device get string descriptor function.
  *
@@ -132,7 +132,7 @@ extern usb_status_t USB_DeviceGetDeviceDescriptor(usb_device_handle handle,
  * @return A USB error code or kStatus_USB_Success.
  */
 usb_status_t USB_DeviceGetStringDescriptor(usb_device_handle handle,
-                                           usb_device_get_string_descriptor_struct_t *stringDescriptor);
+		usb_device_get_string_descriptor_struct_t *stringDescriptor);
 /*!
  * @brief USB device get configuration descriptor function.
  *
@@ -144,5 +144,6 @@ usb_status_t USB_DeviceGetStringDescriptor(usb_device_handle handle,
  * @return A USB error code or kStatus_USB_Success.
  */
 extern usb_status_t USB_DeviceGetConfigurationDescriptor(
-    usb_device_handle handle, usb_device_get_configuration_descriptor_struct_t *configurationDescriptor);
+		usb_device_handle handle,
+		usb_device_get_configuration_descriptor_struct_t *configurationDescriptor);
 #endif /* _USB_DEVICE_DESCRIPTOR_H_ */

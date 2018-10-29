@@ -69,25 +69,30 @@ extern uint8_t USB_EnterLowpowerMode(void);
 #include "gs_usb_class.h"
 #include "main.h"
 /*******************************************************************************
-* Definitions
-******************************************************************************/
+ * Definitions
+ ******************************************************************************/
 
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
-void BOARD_InitHardware(void);
-void USB_DeviceClockInit(void);
-void USB_DeviceIsrEnable(void);
+void
+BOARD_InitHardware(void);
+void
+USB_DeviceClockInit(void);
+void
+USB_DeviceIsrEnable(void);
 #if USB_DEVICE_CONFIG_USE_TASK
 void USB_DeviceTaskFn(void *deviceHandle);
 #endif
 
-void BOARD_DbgConsole_Deinit(void);
-void BOARD_DbgConsole_Init(void);
+void
+BOARD_DbgConsole_Deinit(void);
+void
+BOARD_DbgConsole_Init(void);
 
 /*******************************************************************************
-* Variables
-******************************************************************************/
+ * Variables
+ ******************************************************************************/
 
 static struct gs_host_frame tx_frames[TX_FRAME_BUF_SIZE];
 static uint32_t tx_frames_index;
@@ -101,8 +106,8 @@ volatile static uint8_t s_waitForDataReceive = 0;
 volatile static uint8_t s_comOpen = 0;
 #endif
 /*******************************************************************************
-* Code
-******************************************************************************/
+ * Code
+ ******************************************************************************/
 
 /*!
  * @brief Application initialization function.
@@ -111,8 +116,7 @@ volatile static uint8_t s_comOpen = 0;
  *
  * @return None.
  */
-void APPInit(void)
-{
+void APPInit(void) {
 	gs_usb_init();
 }
 
@@ -123,14 +127,14 @@ void APPInit(void)
  *
  * @return None.
  */
-void APPTask(void)
-{
+void APPTask(void) {
 	uint32_t primask;
 
 	while (rx_frames_index > 0) {
 		primask = DisableGlobalIRQ();
 		rx_frames_index--;
-		usb_send((uint8_t*) &rx_frames[rx_frames_index], sizeof(struct gs_host_frame));
+		usb_send((uint8_t*) &rx_frames[rx_frames_index],
+				sizeof(struct gs_host_frame));
 		EnableGlobalIRQ(primask);
 	}
 }
@@ -141,54 +145,51 @@ int main(void)
 void main(void)
 #endif
 {
-    /* attach 12 MHz clock to FLEXCOMM0 (debug console) */
-    CLOCK_AttachClk(BOARD_DEBUG_UART_CLK_ATTACH);
-    BOARD_InitPins();
-    BOARD_BootClockFROHF96M();
-    BOARD_InitDebugConsole();
+	/* attach 12 MHz clock to FLEXCOMM0 (debug console) */
+	CLOCK_AttachClk(BOARD_DEBUG_UART_CLK_ATTACH);
+	BOARD_InitPins();
+	BOARD_BootClockFROHF96M();
+	BOARD_InitDebugConsole();
 
-    /* Set MCAN clocks to 96/2=48MHz. */
-    CLOCK_SetClkDiv(kCLOCK_DivCan0Clk, 2U, true);
-    CLOCK_SetClkDiv(kCLOCK_DivCan1Clk, 2U, true);
+	/* Set MCAN clocks to 96/2=48MHz. */
+	CLOCK_SetClkDiv(kCLOCK_DivCan0Clk, 2U, true);
+	CLOCK_SetClkDiv(kCLOCK_DivCan1Clk, 2U, true);
 
 #if (defined USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS)
-    POWER_DisablePD(kPDRUNCFG_PD_USB1_PHY);
-    /* enable usb1 host clock */
-    CLOCK_EnableClock(kCLOCK_Usbh1);
-    /*According to reference mannual, device mode setting has to be set by access usb host register */
-    *((uint32_t *)(USBHSH_BASE + 0x50)) |= USBHSH_PORTMODE_DEV_ENABLE_MASK;
-    /* enable usb1 host clock */
-    CLOCK_DisableClock(kCLOCK_Usbh1);
+	POWER_DisablePD(kPDRUNCFG_PD_USB1_PHY);
+	/* enable usb1 host clock */
+	CLOCK_EnableClock(kCLOCK_Usbh1);
+	/*According to reference mannual, device mode setting has to be set by access usb host register */
+	*((uint32_t *) (USBHSH_BASE + 0x50)) |= USBHSH_PORTMODE_DEV_ENABLE_MASK;
+	/* enable usb1 host clock */
+	CLOCK_DisableClock(kCLOCK_Usbh1);
 #endif
 #if (defined USB_DEVICE_CONFIG_LPCIP3511FS) && (USB_DEVICE_CONFIG_LPCIP3511FS)
-    POWER_DisablePD(kPDRUNCFG_PD_USB0_PHY); /*< Turn on USB Phy */
-    CLOCK_SetClkDiv(kCLOCK_DivUsb0Clk, 1, false);
-    CLOCK_AttachClk(kFRO_HF_to_USB0_CLK);
-    /* enable usb0 host clock */
-    CLOCK_EnableClock(kCLOCK_Usbhsl0);
-    /*According to reference mannual, device mode setting has to be set by access usb host register */
-    *((uint32_t *)(USBFSH_BASE + 0x5C)) |= USBFSH_PORTMODE_DEV_ENABLE_MASK;
-    /* disable usb0 host clock */
-    CLOCK_DisableClock(kCLOCK_Usbhsl0);
+	POWER_DisablePD(kPDRUNCFG_PD_USB0_PHY); /*< Turn on USB Phy */
+	CLOCK_SetClkDiv(kCLOCK_DivUsb0Clk, 1, false);
+	CLOCK_AttachClk(kFRO_HF_to_USB0_CLK);
+	/* enable usb0 host clock */
+	CLOCK_EnableClock(kCLOCK_Usbhsl0);
+	/*According to reference mannual, device mode setting has to be set by access usb host register */
+	*((uint32_t *)(USBFSH_BASE + 0x5C)) |= USBFSH_PORTMODE_DEV_ENABLE_MASK;
+	/* disable usb0 host clock */
+	CLOCK_DisableClock(kCLOCK_Usbhsl0);
 #endif
 
-    APPInit();
+	APPInit();
 
-    while (1)
-    {
-        APPTask();
-    }
+	while (1) {
+		APPTask();
+	}
 }
 
-int tx_enqueue(struct gs_host_frame *frame)
-{
+int tx_enqueue(struct gs_host_frame *frame) {
 	tx_frames_index++;
 	memcpy(&tx_frames[tx_frames_index], frame, sizeof(struct gs_host_frame));
 	return 0;
 }
 
-int rx_enqueue(uint8_t channel, mcan_rx_buffer_frame_t *frame)
-{
+int rx_enqueue(uint8_t channel, mcan_rx_buffer_frame_t *frame) {
 	uint32_t primask;
 
 	primask = DisableGlobalIRQ();
@@ -212,8 +213,7 @@ int rx_enqueue(uint8_t channel, mcan_rx_buffer_frame_t *frame)
 	return 0;
 }
 
-int rx_enqueue_echo(struct gs_host_frame *frame)
-{
+int rx_enqueue_echo(struct gs_host_frame *frame) {
 	uint32_t primask;
 
 	primask = DisableGlobalIRQ();
