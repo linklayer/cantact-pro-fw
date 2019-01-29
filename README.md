@@ -1,6 +1,6 @@
-# CANtact Pro Firmware
+# CANtact FD Firmware
 
-This repository contains firmware for the CANtact Pro device. This firmware is
+This repository contains firmware for the CANtact FD device. This firmware is
 provided as a project for the NXP MCUXpresso IDE, which is available for free
 from NXP.
 

@@ -447,7 +447,7 @@ void gs_usb_init() {
 					&s_usb_can.deviceHandle)) {
 		usb_echo("USB device init failed\r\n");
 	} else {
-		usb_echo("CANtact Pro USB started\r\n");
+		usb_echo("CANtact FD USB started\r\n");
 	}
 
 	USB_DeviceIsrEnable();
