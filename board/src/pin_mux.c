@@ -7,11 +7,11 @@
 /*
  * TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
 !!GlobalInfo
-product: Pins v4.1
+product: Pins v5.0
 processor: LPC54616J512
 package_id: LPC54616J512BD100
 mcu_data: ksdk2_0
-processor_version: 4.0.0
+processor_version: 5.0.1
 pin_labels:
 - {pin_num: '35', pin_signal: PIO0_23/MCLK/CTIMER1_MAT2/CTIMER3_MAT3/SCT0_OUT4/SPIFI_CSN/ADC0_11, label: LED_1}
 - {pin_num: '36', pin_signal: PIO1_8/FC0_CTS_SDA_SSEL0/SD_CLK/SCT0_OUT1/FC4_SSEL2/EMC_A(7), label: LED_2}
@@ -59,10 +59,11 @@ BOARD_InitPins:
   - {pin_num: '83', peripheral: GPIO, signal: 'PIO0, 2', pin_signal: PIO0_2/FC3_TXD_SCL_MISO/CTIMER0_CAP1/SCT0_OUT0/SCT0_GPI2/EMC_D(0), direction: OUTPUT}
   - {pin_num: '77', peripheral: GPIO, signal: 'PIO0, 21', pin_signal: PIO0_21/FC3_RTS_SCL_SSEL1/UTICK_CAP3/CTIMER3_MAT3/SCT0_GPI3/SCI0_SCLK/EMC_A(3)/FC7_SCK, direction: OUTPUT}
   - {pin_num: '78', peripheral: GPIO, signal: 'PIO1, 14', pin_signal: PIO1_14/ENET_RX_DV/UTICK_CAP2/CTIMER1_MAT2/FC5_CTS_SDA_SSEL0/USB0_UP_LED/EMC_DQM(1), direction: OUTPUT}
-  - {pin_num: '35', peripheral: GPIO, signal: 'PIO0, 23', pin_signal: PIO0_23/MCLK/CTIMER1_MAT2/CTIMER3_MAT3/SCT0_OUT4/SPIFI_CSN/ADC0_11, direction: OUTPUT}
-  - {pin_num: '36', peripheral: GPIO, signal: 'PIO1, 8', pin_signal: PIO1_8/FC0_CTS_SDA_SSEL0/SD_CLK/SCT0_OUT1/FC4_SSEL2/EMC_A(7)}
-  - {pin_num: '37', peripheral: GPIO, signal: 'PIO1, 21', pin_signal: PIO1_21/FC7_CTS_SDA_SSEL0/CTIMER3_MAT2/FC4_RXD_SDA_MOSI/EMC_D(10)}
-  - {pin_num: '38', peripheral: GPIO, signal: 'PIO0, 24', pin_signal: PIO0_24/FC0_RXD_SDA_MOSI/SD_D(0)/CTIMER2_CAP0/SCT0_GPI0/SPIFI_IO(0)}
+  - {pin_num: '35', peripheral: GPIO, signal: 'PIO0, 23', pin_signal: PIO0_23/MCLK/CTIMER1_MAT2/CTIMER3_MAT3/SCT0_OUT4/SPIFI_CSN/ADC0_11, direction: OUTPUT, gpio_init_state: 'false',
+    mode: pullUp}
+  - {pin_num: '36', peripheral: GPIO, signal: 'PIO1, 8', pin_signal: PIO1_8/FC0_CTS_SDA_SSEL0/SD_CLK/SCT0_OUT1/FC4_SSEL2/EMC_A(7), direction: OUTPUT}
+  - {pin_num: '37', peripheral: GPIO, signal: 'PIO1, 21', pin_signal: PIO1_21/FC7_CTS_SDA_SSEL0/CTIMER3_MAT2/FC4_RXD_SDA_MOSI/EMC_D(10), direction: OUTPUT}
+  - {pin_num: '38', peripheral: GPIO, signal: 'PIO0, 24', pin_signal: PIO0_24/FC0_RXD_SDA_MOSI/SD_D(0)/CTIMER2_CAP0/SCT0_GPI0/SPIFI_IO(0), direction: OUTPUT}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 /* clang-format on */
@@ -104,12 +105,33 @@ void BOARD_InitPins(void)
     /* Initialize GPIO functionality on pin PIO0_23 (pin 35)  */
     GPIO_PinInit(GPIO, 0U, 23U, &gpio0_pin35_config);
 
+    gpio_pin_config_t gpio0_pin38_config = {
+        .pinDirection = kGPIO_DigitalOutput,
+        .outputLogic = 0U
+    };
+    /* Initialize GPIO functionality on pin PIO0_24 (pin 38)  */
+    GPIO_PinInit(GPIO, 0U, 24U, &gpio0_pin38_config);
+
+    gpio_pin_config_t gpio1_pin36_config = {
+        .pinDirection = kGPIO_DigitalOutput,
+        .outputLogic = 0U
+    };
+    /* Initialize GPIO functionality on pin PIO1_8 (pin 36)  */
+    GPIO_PinInit(GPIO, 1U, 8U, &gpio1_pin36_config);
+
     gpio_pin_config_t gpio1_pin78_config = {
         .pinDirection = kGPIO_DigitalOutput,
         .outputLogic = 0U
     };
     /* Initialize GPIO functionality on pin PIO1_14 (pin 78)  */
     GPIO_PinInit(GPIO, 1U, 14U, &gpio1_pin78_config);
+
+    gpio_pin_config_t gpio1_pin37_config = {
+        .pinDirection = kGPIO_DigitalOutput,
+        .outputLogic = 0U
+    };
+    /* Initialize GPIO functionality on pin PIO1_21 (pin 37)  */
+    GPIO_PinInit(GPIO, 1U, 21U, &gpio1_pin37_config);
 
     IOCON->PIO[0][2] = ((IOCON->PIO[0][2] &
                          /* Mask bits to zero which are setting */
@@ -154,11 +176,16 @@ void BOARD_InitPins(void)
 
     IOCON->PIO[0][23] = ((IOCON->PIO[0][23] &
                           /* Mask bits to zero which are setting */
-                          (~(IOCON_PIO_FUNC_MASK | IOCON_PIO_DIGIMODE_MASK)))
+                          (~(IOCON_PIO_FUNC_MASK | IOCON_PIO_MODE_MASK | IOCON_PIO_DIGIMODE_MASK)))
 
                          /* Selects pin function.
                           * : PORT023 (pin 35) is configured as PIO0_23. */
                          | IOCON_PIO_FUNC(PIO023_FUNC_ALT0)
+
+                         /* Selects function mode (on-chip pull-up/pull-down resistor control).
+                          * : Pull-up.
+                          * Pull-up resistor enabled. */
+                         | IOCON_PIO_MODE(PIO023_MODE_PULL_UP)
 
                          /* Select Analog/Digital mode.
                           * : Digital mode. */

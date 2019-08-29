@@ -66,6 +66,7 @@ extern uint8_t USB_EnterLowpowerMode(void);
 #include "fsl_mcan.h"
 
 #include "can.h"
+#include "gpio.h"
 #include "gs_usb_class.h"
 #include "main.h"
 /*******************************************************************************
@@ -117,6 +118,13 @@ volatile static uint8_t s_comOpen = 0;
  * @return None.
  */
 void APPInit(void) {
+	gpio_set_led(GPIO_LED_1, 1);
+	gpio_set_led(GPIO_LED_2, 1);
+	gpio_set_led(GPIO_LED_3, 1);
+	gpio_set_led(GPIO_LED_4, 1);
+
+	gpio_set_swcan_enable(0);
+
 	gs_usb_init();
 }
 
