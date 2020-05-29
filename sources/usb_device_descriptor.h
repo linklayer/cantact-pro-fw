@@ -47,7 +47,7 @@
 #define CAN_CMD_PACKET_SIZE        		64  /* Control Endpoint Packet size */
 
 #define USB_CAN_VID                     0x1d50
-#define USB_CAN_PID                     0x606f
+#define USB_CAN_PID                     0x6070
 #define USB_CAN_INTERFACE_COUNT 		0x02
 
 #define GSUSB_ENDPOINT_IN          		0x81
@@ -69,8 +69,8 @@
 #define USB_DEVICE_LANGUAGE_COUNT 		0x01
 
 /* Packet size. */
-#define HS_GS_USB_INTERRUPT_IN_INTERVAL 	0x07 /* 2^(7-1) = 8ms */
-#define FS_GS_USB_INTERRUPT_IN_INTERVAL 	0x08
+#define HS_GS_USB_INTERRUPT_IN_INTERVAL 	0x00 /* 2^(7-1) = 8ms */
+#define FS_GS_USB_INTERRUPT_IN_INTERVAL 	0x00
 #define HS_GS_USB_BULK_IN_PACKET_SIZE 		512
 #define FS_GS_USB_BULK_IN_PACKET_SIZE 		64
 #define HS_GS_USB_BULK_OUT_PACKET_SIZE 		512
@@ -87,6 +87,9 @@
 #define USB_DEVICE_PROTOCOL 	0xFF
 
 #define USB_DEVICE_MAX_POWER 	0x32
+
+// WinUSB Vendor Code
+#define WINUSB_VENDOR_CODE		0x20
 
 /*******************************************************************************
  * API

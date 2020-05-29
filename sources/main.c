@@ -187,6 +187,7 @@ void main(void)
 	APPInit();
 
 	while (1) {
+
 		APPTask();
 	}
 }

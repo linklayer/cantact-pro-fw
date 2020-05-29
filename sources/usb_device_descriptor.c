@@ -34,9 +34,7 @@
 #include "usb_device_config.h"
 #include "usb.h"
 #include "usb_device.h"
-
 #include "usb_device_class.h"
-
 #include "usb_device_descriptor.h"
 
 /*******************************************************************************
@@ -81,11 +79,11 @@ USB_DESCRIPTOR_TYPE_DEVICE,
 USB_SHORT_GET_LOW(USB_DEVICE_SPECIFIC_BCD_VERSION), USB_SHORT_GET_HIGH(
 		USB_DEVICE_SPECIFIC_BCD_VERSION),
 /* Class code (assigned by the USB-IF). */
-USB_DEVICE_CLASS,
+0,//USB_DEVICE_CLASS,
 /* Subclass code (assigned by the USB-IF). */
-USB_DEVICE_SUBCLASS,
+0,//USB_DEVICE_SUBCLASS,
 /* Protocol code (assigned by the USB-IF). */
-USB_DEVICE_PROTOCOL,
+0,//USB_DEVICE_PROTOCOL,
 /* Maximum packet size for endpoint zero (only 8, 16, 32, or 64 are valid) */
 USB_CONTROL_MAX_PACKET_SIZE,
 /* Vendor ID (assigned by the USB-IF) */
@@ -188,6 +186,20 @@ usb_language_list_t g_UsbDeviceLanguageList = { g_UsbDeviceString0,
 		sizeof(g_UsbDeviceString0), g_UsbDeviceLanguage,
 		USB_DEVICE_LANGUAGE_COUNT, };
 
+/* Microsoft OS String Descriptor */
+USB_DMA_INIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE)
+static uint8_t g_UsbDeviceWinusbStr[] =
+{
+	0x12,                    /* length */
+	0x03,                    /* descriptor type == string */
+	0x4D, 0x00, 0x53, 0x00,  /* signature: "MSFT100" */
+	0x46, 0x00, 0x54, 0x00,
+	0x31, 0x00, 0x30, 0x00,
+	0x30, 0x00,
+	WINUSB_VENDOR_CODE,	     /* vendor code */
+	0x00                     /* padding */
+};
+
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -245,6 +257,10 @@ usb_status_t USB_DeviceGetStringDescriptor(usb_device_handle handle,
 		stringDescriptor->buffer =
 				(uint8_t *) g_UsbDeviceLanguageList.languageString;
 		stringDescriptor->length = g_UsbDeviceLanguageList.stringLength;
+	} else if (stringDescriptor->stringIndex == 0xEEU) {
+		//	OS String Descriptor
+		stringDescriptor->buffer = g_UsbDeviceWinusbStr;
+		stringDescriptor->length = sizeof(g_UsbDeviceWinusbStr);
 	} else {
 		uint8_t languageId = 0U;
 		uint8_t languageIndex = USB_DEVICE_STRING_COUNT;
