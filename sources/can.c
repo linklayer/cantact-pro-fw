@@ -162,12 +162,19 @@ int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc,
 		frame.id = can_id << STDID_OFFSET;
 		frame.xtd = kMCAN_FrameIDStandard;
 	}
+	// check RTR bit
+	if (can_id & 0x40000000) {
+		// RTR frame, remove RTR bit
+		frame.rtr = kMCAN_FrameTypeRemote;
+		frame.id = frame.id & 0x3FFFFFFF;
+	} else {
+		frame.rtr = kMCAN_FrameTypeData;
+	}
 
 	frame.dlc = can_dlc;
 	frame.size = can_dlc;
 	frame.data = can_data;
 
-	frame.rtr = kMCAN_FrameTypeData;
 	frame.fdf = 0;
 	frame.brs = 0;
 
