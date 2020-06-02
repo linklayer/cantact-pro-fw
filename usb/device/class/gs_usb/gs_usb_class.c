@@ -262,7 +262,7 @@ usb_status_t USB_DeviceProcessVendorRequest(usb_device_handle handle,
 				error = kStatus_USB_InvalidParameter;
 			}
 		} else if (mode->mode == GS_CAN_MODE_START) {
-			if (can_start(channel) != 0) {
+			if (can_start(channel, mode->flags) != 0) {
 				error = kStatus_USB_InvalidParameter;
 			}
 		}

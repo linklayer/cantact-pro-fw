@@ -59,7 +59,7 @@ int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
 	return 0;
 }
 
-int can_start(uint8_t channel) {
+int can_start(uint8_t channel, uint32_t flags) {
 	mcan_config_t config;
 	mcan_rx_fifo_config_t rxFifo0;
 	mcan_tx_buffer_config_t txBuffer;
@@ -71,6 +71,13 @@ int can_start(uint8_t channel) {
 	can_dev = can_devs[channel];
 
 	MCAN_GetDefaultConfig(&config);
+
+	if (flags & GS_CAN_FEATURE_LISTEN_ONLY) {
+		config.enableBusMon = true;
+	}
+	if (flags & GS_CAN_FEATURE_LOOP_BACK) {
+		config.enableLoopBackExt = true;
+	}
 
 	if (can_dev == CAN0) {
 		MCAN_Init(can_dev, &config, MCAN0_CLK_FREQ);
@@ -134,7 +141,6 @@ int can_stop(uint8_t channel) {
 	can_dev = can_devs[channel];
 
 	MCAN_Deinit(can_dev);
-
 	return 0;
 }
 
