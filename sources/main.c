@@ -118,12 +118,12 @@ volatile static uint8_t s_comOpen = 0;
  * @return None.
  */
 void APPInit(void) {
-	gpio_set_led(GPIO_LED_1, 1);
-	gpio_set_led(GPIO_LED_2, 1);
-	gpio_set_led(GPIO_LED_3, 1);
-	gpio_set_led(GPIO_LED_4, 1);
+	gpio_set_led(GPIO_LED_1, 0);
+	gpio_set_led(GPIO_LED_2, 0);
+	gpio_set_led(GPIO_LED_3, 0);
+	gpio_set_led(GPIO_LED_4, 0);
 
-	gpio_set_swcan_enable(0);
+	gpio_set_swcan_enable(1);
 
 	gs_usb_init();
 }
@@ -159,15 +159,15 @@ void main(void)
 	BOARD_BootClockFROHF96M();
 	BOARD_InitDebugConsole();
 
-	/* Set MCAN clocks to 96/2=48MHz. */
-	CLOCK_SetClkDiv(kCLOCK_DivCan0Clk, 2U, true);
-	CLOCK_SetClkDiv(kCLOCK_DivCan1Clk, 2U, true);
+	/* Set MCAN clocks to 96/4=24MHz. */
+	CLOCK_SetClkDiv(kCLOCK_DivCan0Clk, 4U, true);
+	CLOCK_SetClkDiv(kCLOCK_DivCan1Clk, 4U, true);
 
 #if (defined USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS)
 	POWER_DisablePD(kPDRUNCFG_PD_USB1_PHY);
 	/* enable usb1 host clock */
 	CLOCK_EnableClock(kCLOCK_Usbh1);
-	/*According to reference mannual, device mode setting has to be set by access usb host register */
+	/*According to reference manual, device mode setting has to be set by access usb host register */
 	*((uint32_t *) (USBHSH_BASE + 0x50)) |= USBHSH_PORTMODE_DEV_ENABLE_MASK;
 	/* enable usb1 host clock */
 	CLOCK_DisableClock(kCLOCK_Usbh1);

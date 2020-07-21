@@ -47,7 +47,7 @@
 #define CAN_CMD_PACKET_SIZE        		64  /* Control Endpoint Packet size */
 
 #define USB_CAN_VID                     0x1d50
-#define USB_CAN_PID                     0x6070
+#define USB_CAN_PID                     0x606f
 #define USB_CAN_INTERFACE_COUNT 		0x02
 
 #define GSUSB_ENDPOINT_IN          		0x81

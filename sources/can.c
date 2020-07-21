@@ -4,6 +4,7 @@
  */
 
 #include "can.h"
+#include "gpio.h"
 #include "main.h"
 
 #define MCAN0_CLK_FREQ CLOCK_GetFreq(kCLOCK_MCAN0)
@@ -20,6 +21,8 @@
 static CAN_Type* can_devs[CAN_NUM_CHANNELS] = {
 CAN0,
 CAN1 };
+static mcan_timing_config_t timing_configs[CAN_NUM_CHANNELS];
+static uint8_t channel_enabled[CAN_NUM_CHANNELS];
 
 void CAN0_IRQ0_IRQHandler(void) {
 	mcan_rx_buffer_frame_t rx_frame;
@@ -46,15 +49,16 @@ void CAN1_IRQ0_IRQHandler(void) {
 }
 
 int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
-	CAN_Type* can_dev;
-
 	if (channel >= CAN_NUM_CHANNELS) {
 		return -1;
 	}
-	can_dev = can_devs[channel];
+	memcpy(&timing_configs[channel], timing_config, sizeof(mcan_timing_config_t));
 
-	// set timing configuration
-	MCAN_SetArbitrationTimingConfig(can_dev, timing_config);
+	// hardware expects these to be one less than value
+	timing_configs[channel].preDivider -= 1;
+	timing_configs[channel].seg1 -= 1;
+	timing_configs[channel].seg2 -= 1;
+	timing_configs[channel].rJumpwidth -= 1;
 
 	return 0;
 }
@@ -71,7 +75,7 @@ int can_start(uint8_t channel, uint32_t flags) {
 	can_dev = can_devs[channel];
 
 	MCAN_GetDefaultConfig(&config);
-
+	//config.enableBusMon = true; // REMOVE ME
 	if (flags & GS_CAN_FEATURE_LISTEN_ONLY) {
 		config.enableBusMon = true;
 	}
@@ -81,9 +85,18 @@ int can_start(uint8_t channel, uint32_t flags) {
 
 	if (can_dev == CAN0) {
 		MCAN_Init(can_dev, &config, MCAN0_CLK_FREQ);
+		gpio_set_led(GPIO_LED_1, 1);
 	} else if (can_dev == CAN1) {
 		MCAN_Init(can_dev, &config, MCAN1_CLK_FREQ);
+		gpio_set_led(GPIO_LED_3, 1);
 	}
+
+	channel_enabled[channel] = 1;
+
+	// set timing configuration
+	// this must happen after MCAN_Init or it will be overridden
+	MCAN_SetArbitrationTimingConfig(can_dev, &timing_configs[channel]);
+	MCAN_SetDataTimingConfig(can_dev, &timing_configs[channel]);
 
 	/* Set Message RAM base address and clear to avoid BEU/BEC error. */
 	MCAN_SetMsgRAMBase(can_dev, CAN_RAM_BASE);
@@ -139,8 +152,15 @@ int can_stop(uint8_t channel) {
 		return -1;
 	}
 	can_dev = can_devs[channel];
+	channel_enabled[channel] = 0;
 
 	MCAN_Deinit(can_dev);
+	if (can_dev == CAN0) {
+		gpio_set_led(GPIO_LED_1, 0);
+	}
+	else if (can_dev == CAN1) {
+		gpio_set_led(GPIO_LED_3, 0);
+	}
 	return 0;
 }
 
@@ -152,6 +172,9 @@ int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc,
 	mcan_tx_buffer_frame_t frame;
 
 	if (channel >= CAN_NUM_CHANNELS) {
+		return -1;
+	}
+	if (!channel_enabled[channel]) {
 		return -1;
 	}
 	can_dev = can_devs[channel];
