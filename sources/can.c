@@ -24,6 +24,9 @@ CAN1 };
 static mcan_timing_config_t timing_configs[CAN_NUM_CHANNELS];
 static uint8_t channel_enabled[CAN_NUM_CHANNELS];
 
+static uint64_t rx_count[CAN_NUM_CHANNELS];
+static uint64_t tx_count[CAN_NUM_CHANNELS];
+
 void CAN0_IRQ0_IRQHandler(void) {
 	mcan_rx_buffer_frame_t rx_frame;
 
@@ -31,6 +34,7 @@ void CAN0_IRQ0_IRQHandler(void) {
 		MCAN_ClearStatusFlag(CAN0, CAN_IR_RF0N_MASK);
 		MCAN_ReadRxFifo(CAN0, 0, &rx_frame);
 		rx_enqueue(0, &rx_frame);
+		rx_count[0]++;
 	} else if (MCAN_GetStatusFlag(CAN0, CAN_IR_TC_MASK)) {
 		MCAN_ClearStatusFlag(CAN0, CAN_IR_TC_MASK);
 	}
@@ -43,9 +47,31 @@ void CAN1_IRQ0_IRQHandler(void) {
 		MCAN_ClearStatusFlag(CAN1, CAN_IR_RF0N_MASK);
 		MCAN_ReadRxFifo(CAN1, 0, &rx_frame);
 		rx_enqueue(1, &rx_frame);
+		rx_count[1]++;
 	} else if (MCAN_GetStatusFlag(CAN1, CAN_IR_TC_MASK)) {
 		MCAN_ClearStatusFlag(CAN1, CAN_IR_TC_MASK);
 	}
+}
+
+uint64_t can_get_rx_count(uint8_t channel) {
+	if (channel >= CAN_NUM_CHANNELS) {
+		return 0;
+	}
+	return rx_count[channel];
+}
+
+uint64_t can_get_tx_count(uint8_t channel) {
+	if (channel >= CAN_NUM_CHANNELS) {
+		return 0;
+	}
+	return tx_count[channel];
+}
+
+uint8_t can_get_enabled(uint8_t channel) {
+	if (channel >= CAN_NUM_CHANNELS) {
+		return 0;
+	}
+	return channel_enabled[channel];
 }
 
 int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
@@ -85,10 +111,8 @@ int can_start(uint8_t channel, uint32_t flags) {
 
 	if (can_dev == CAN0) {
 		MCAN_Init(can_dev, &config, MCAN0_CLK_FREQ);
-		gpio_set_led(GPIO_LED_1, 1);
 	} else if (can_dev == CAN1) {
 		MCAN_Init(can_dev, &config, MCAN1_CLK_FREQ);
-		gpio_set_led(GPIO_LED_3, 1);
 	}
 
 	channel_enabled[channel] = 1;
@@ -155,12 +179,7 @@ int can_stop(uint8_t channel) {
 	channel_enabled[channel] = 0;
 
 	MCAN_Deinit(can_dev);
-	if (can_dev == CAN0) {
-		gpio_set_led(GPIO_LED_1, 0);
-	}
-	else if (can_dev == CAN1) {
-		gpio_set_led(GPIO_LED_3, 0);
-	}
+
 	return 0;
 }
 
@@ -211,7 +230,8 @@ int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc,
 	xfer.bufferIdx = buf;
 
 	MCAN_TransferSendNonBlocking(can_dev, &handle, &xfer);
-	//MCAN_TransferSendBlocking(can_dev, 0, &frame);
+
+	tx_count[channel]++;
 
 	return 0;
 }

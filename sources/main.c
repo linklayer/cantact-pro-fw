@@ -64,6 +64,7 @@ extern uint8_t USB_EnterLowpowerMode(void);
 #include <stdbool.h>
 #include "fsl_power.h"
 #include "fsl_mcan.h"
+#include "fsl_ctimer.h"
 
 #include "can.h"
 #include "gpio.h"
@@ -72,6 +73,17 @@ extern uint8_t USB_EnterLowpowerMode(void);
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
+/* Definitions for BOARD_InitPeripherals functional group */
+/* Definition of peripheral ID */
+#define CTIMER0_PERIPHERAL CTIMER0
+/* Timer tick frequency in Hz (input frequency of the timer) */
+#define CTIMER0_TICK_FREQ 1000UL
+/* Timer tick period in ns (input period of the timer) */
+#define CTIMER0_TICK_PERIOD 1000000UL
+/* Definition of channel 0 ID */
+#define CTIMER0_MATCH_0_CHANNEL kCTIMER_Match_0
+/* CTIMER0 interrupt vector ID (number). */
+#define CTIMER0_TIMER_IRQN CTIMER0_IRQn
 
 /*******************************************************************************
  * Prototypes
@@ -106,9 +118,78 @@ static uint32_t rx_frames_index;
 volatile static uint8_t s_waitForDataReceive = 0;
 volatile static uint8_t s_comOpen = 0;
 #endif
+
+const ctimer_config_t CTIMER0_config = {
+  .mode = kCTIMER_TimerMode,
+  .input = kCTIMER_Capture_0,
+  .prescale = 95999
+};
+const ctimer_match_config_t CTIMER0_Match_0_config = {
+  .matchValue = 100,
+  .enableCounterReset = true,
+  .enableCounterStop = false,
+  .outControl = kCTIMER_Output_NoAction,
+  .outPinInitState = false,
+  .enableInterrupt = true
+};
+
 /*******************************************************************************
  * Code
  ******************************************************************************/
+static int led_tick = 0;
+static uint64_t last_tx_count[CAN_NUM_CHANNELS];
+static uint64_t last_rx_count[CAN_NUM_CHANNELS];
+static void led_identify() {
+	gpio_set_led(GPIO_LED_1, led_tick%4==0);
+	gpio_set_led(GPIO_LED_2, led_tick%4==1);
+	gpio_set_led(GPIO_LED_3, led_tick%4==2);
+	gpio_set_led(GPIO_LED_4, led_tick%4==3);
+}
+void CTIMER0_IRQHandler() {
+	led_tick++;
+	//led_identify();
+
+	// set LED states
+	if (can_get_rx_count(0) > last_rx_count[0]) {
+		gpio_toggle_led(GPIO_LED_1);
+		last_rx_count[0] = can_get_rx_count(0);
+	} else if (can_get_enabled(0)) {
+		gpio_set_led(GPIO_LED_1, 1);
+	} else {
+		gpio_set_led(GPIO_LED_1, 0);
+	}
+
+	if (can_get_rx_count(1) > last_rx_count[1]) {
+		gpio_toggle_led(GPIO_LED_3);
+		last_rx_count[1] = can_get_rx_count(1);
+	} else if (can_get_enabled(1)) {
+		gpio_set_led(GPIO_LED_3, 1);
+	} else {
+		gpio_set_led(GPIO_LED_3, 0);
+	}
+
+	if (can_get_tx_count(0) > last_tx_count[0]) {
+		gpio_toggle_led(GPIO_LED_2);
+		last_tx_count[0] = can_get_tx_count(0);
+	} else if (can_get_enabled(0)) {
+		gpio_set_led(GPIO_LED_2, 1);
+	} else {
+		gpio_set_led(GPIO_LED_2, 0);
+	}
+
+	if (can_get_tx_count(1) > last_tx_count[1]) {
+		gpio_toggle_led(GPIO_LED_4);
+		last_tx_count[1] = can_get_tx_count(1);
+	} else if (can_get_enabled(1)) {
+		gpio_set_led(GPIO_LED_4, 1);
+	} else {
+		gpio_set_led(GPIO_LED_4, 0);
+	}
+
+	CTIMER_ClearStatusFlags(CTIMER0_PERIPHERAL, 0xFFFFFFFF);
+}
+
+
 
 /*!
  * @brief Application initialization function.
@@ -123,8 +204,13 @@ void APPInit(void) {
 	gpio_set_led(GPIO_LED_3, 0);
 	gpio_set_led(GPIO_LED_4, 0);
 
-	gpio_set_swcan_enable(1);
+	gpio_set_swcan_enable(0);
 
+	/* CTIMER0 peripheral initialization */
+	CTIMER_Init(CTIMER0_PERIPHERAL, &CTIMER0_config);
+	/* Match channel 0 of CTIMER0 peripheral initialization */
+	CTIMER_SetupMatch(CTIMER0_PERIPHERAL, CTIMER0_MATCH_0_CHANNEL, &CTIMER0_Match_0_config);
+	CTIMER_StartTimer(CTIMER0_PERIPHERAL);
 	gs_usb_init();
 }
 

@@ -325,6 +325,18 @@
          <dcdx_configurations/>
       </dcdx>
       <periphs name="Peripherals" version="7.0" enabled="true" update_project_code="false">
+         <dependencies>
+            <dependency resourceType="SWComponent" resourceId="platform.drivers.ctimer" description="CTimer Driver not found in the toolchain/IDE project. Project will not compile!" problem_level="2" source="Peripherals">
+               <feature name="enabled" evaluation="equal">
+                  <data type="Boolean">true</data>
+               </feature>
+            </dependency>
+            <dependency resourceType="SWComponent" resourceId="platform.drivers.ctimer" description="Unsupported version of the CTimer Driver in the toolchain/IDE project. Required: ${required_value}, actual: ${actual_value}. Project might not compile correctly." problem_level="1" source="Peripherals">
+               <feature name="version" evaluation="equivalent">
+                  <data type="Version">2.0.2</data>
+               </feature>
+            </dependency>
+         </dependencies>
          <generated_project_files>
             <file path="board/peripherals.c" update_enabled="false"/>
             <file path="board/peripherals.h" update_enabled="false"/>
@@ -336,15 +348,58 @@
             <functional_group name="BOARD_InitPeripherals" uuid="203708d0-a2af-4db1-88aa-52d124a9c114" called_from_default_init="true" id_prefix="" core="core0">
                <description></description>
                <options/>
-               <dependencies/>
-               <instances/>
+               <dependencies>
+                  <dependency resourceType="ClockOutput" resourceId="System_clock" description="System_clock is inactive. Problem must be resolved in another tool." problem_level="2" source="Peripherals:BOARD_InitPeripherals">
+                     <feature name="frequency" evaluation="greaterThan">
+                        <data type="Frequency" unit="Hz">0</data>
+                     </feature>
+                  </dependency>
+                  <dependency resourceType="PeripheralUnifiedSignal" resourceId="CTIMER0.ctimer_match.0" description="Match output of the match 0 channel of peripheral CTIMER0 is not routed. Problem must be resolved in another tool." problem_level="1" source="Peripherals:BOARD_InitPeripherals">
+                     <feature name="routed" evaluation="equal">
+                        <data type="Boolean">true</data>
+                     </feature>
+                  </dependency>
+               </dependencies>
+               <instances>
+                  <instance name="CTIMER0" uuid="2f371e39-4519-4e30-b471-214b00eba479" type="ctimer" type_id="ctimer_c8b90232d8b6318ba1dac2cf08fb5f4a" mode="Capture_Match" peripheral="CTIMER0" enabled="true" comment="" custom_name_enabled="false">
+                     <config_set name="fsl_ctimer">
+                        <struct name="ctimerConfig">
+                           <setting name="mode" value="kCTIMER_TimerMode"/>
+                           <setting name="clockSource" value="FunctionClock"/>
+                           <setting name="clockSourceFreq" value="BOARD_BootClockFROHF96M"/>
+                           <setting name="timerPrescaler" value="96000"/>
+                        </struct>
+                        <setting name="EnableTimerInInit" value="false"/>
+                        <array name="matchChannels">
+                           <struct name="0">
+                              <setting name="matchChannelPrefixId" value="Match_0"/>
+                              <setting name="matchChannel" value="kCTIMER_Match_0"/>
+                              <setting name="matchValueStr" value="250"/>
+                              <setting name="enableCounterReset" value="false"/>
+                              <setting name="enableCounterStop" value="false"/>
+                              <setting name="outControl" value="kCTIMER_Output_NoAction"/>
+                              <setting name="outPinInitValue" value="low"/>
+                              <setting name="enableInterrupt" value="true"/>
+                           </struct>
+                        </array>
+                        <struct name="interruptCallbackConfig">
+                           <struct name="interrupt">
+                              <setting name="IRQn" value="CTIMER0_IRQn"/>
+                              <setting name="enable_priority" value="false"/>
+                              <setting name="priority" value="0"/>
+                           </struct>
+                           <setting name="callback" value="kCTIMER_NoCallback"/>
+                        </struct>
+                     </config_set>
+                  </instance>
+               </instances>
             </functional_group>
          </functional_groups>
          <components>
             <component name="system" uuid="2b57d839-0f3f-4a70-bc58-7272ceb129cf" type_id="system_54b53072540eeeb8f8e9343e71f28176">
                <config_set_global name="global_system_definitions"/>
             </component>
-            <component name="msg" uuid="decb8b8f-d4ad-49ef-b041-1dbf923fe821" type_id="msg_6e2baaf3b97dbeef01c0043275f9a0e7">
+            <component name="msg" uuid="7995e7ad-3561-4eff-b039-708ba0973b14" type_id="msg_6e2baaf3b97dbeef01c0043275f9a0e7">
                <config_set_global name="global_messages"/>
             </component>
          </components>

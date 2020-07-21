@@ -85,6 +85,9 @@
 #define USB_PLL_NSEL_VAL_P (10U)                                      /*!<  NDEC is in bits  11:10 */
 #define USB_PLL_NSEL_VAL_M (0x3U)
 
+/*!<  SWITCH USB POSTDIVIDER FOR REGITSER WRITING */
+#define SWITCH_USB_PSEL(x)    ((x==0x0U) ? 0x1U : (x==0x1U) ? 0x02U : (x==0x2U) ? 0x4U : (x==3U) ? 0x8U : 0U)
+
 /*!<  SYS PLL NDEC reg */
 #define PLL_NDEC_VAL_SET(value) (((unsigned long)(value) << PLL_NDEC_VAL_P) & PLL_NDEC_VAL_M)
 /*!<  SYS PLL PDEC reg */
@@ -118,9 +121,9 @@ static uint32_t s_Audio_Pll_Freq;
 /** External clock rate on the CLKIN pin in Hz. If not used,
     set this to 0. Otherwise, set it to the exact rate in Hz this pin is
     being driven at. */
-static const uint32_t s_I2S_Mclk_Freq = 0U;
-static const uint32_t s_Ext_Clk_Freq = 12000000U;
-static const uint32_t s_Lcd_Clk_In_Freq = 0U;
+const uint32_t g_I2S_Mclk_Freq = 0U;
+const uint32_t g_Ext_Clk_Freq = 12000000U;
+const uint32_t g_Lcd_Clk_In_Freq = 0U;
 
 /*******************************************************************************
  * Variables
@@ -151,6 +154,8 @@ static uint32_t findPllPostDiv(uint32_t ctrlReg, uint32_t pDecReg);
 static uint32_t findPllMMult(uint32_t ctrlReg, uint32_t mDecReg);
 /* Convert the binary to fractional part */
 static double Binary2Fractional(uint32_t binaryPart);
+/* Calculate the powerTimes' power of 2 */
+static uint32_t power2Cal(uint32_t powerTimes);
 /* Get the greatest common divisor */
 static uint32_t FindGreatestCommonDivisor(uint32_t m, uint32_t n);
 /* Set PLL output based on desired output rate */
@@ -301,7 +306,6 @@ uint32_t CLOCK_GetClockOutClkFreq(void)
     return freq / ((SYSCON->CLKOUTDIV&0xffU)+1U);
 }
 
-/* Get SPIFI Clk */
 uint32_t CLOCK_GetSpifiClkFreq(void)
 {
     uint32_t freq = 0U;
@@ -499,7 +503,7 @@ uint32_t CLOCK_GetSdioClkFreq(void)
           break;
     }
 
-    return freq / ((SYSCON->SDIOCLKDIV & 0xffU) + 1U);
+    return freq / ((SYSCON->SDIOCLKDIV&0xffU)+1U);
 }
 
 /* Get LCD Clk */
@@ -532,7 +536,7 @@ uint32_t CLOCK_GetLcdClkFreq(void)
 /* Get LCD CLK IN Clk */
 uint32_t CLOCK_GetLcdClkIn(void)
 {
-  return s_Lcd_Clk_In_Freq;
+  return g_Lcd_Clk_In_Freq;
 }
 
 /* Get FRO 12M Clk */
@@ -544,7 +548,7 @@ uint32_t CLOCK_GetFro12MFreq(void)
 /* Get EXT OSC Clk */
 uint32_t CLOCK_GetExtClkFreq(void)
 {
-    return s_Ext_Clk_Freq;
+    return g_Ext_Clk_Freq;
 }
 
 /* Get WATCH DOG Clk */
@@ -566,7 +570,7 @@ uint32_t CLOCK_GetWdtOscFreq(void)
 /* Get HF FRO Clk */
 uint32_t CLOCK_GetFroHfFreq(void)
 {
-    if ((SYSCON->PDRUNCFG[0] & SYSCON_PDRUNCFG_PDEN_FRO_MASK) || (!(SYSCON->FROCTRL & SYSCON_FROCTRL_HSPDCLK_MASK)))
+    if ((SYSCON->PDRUNCFG[0] & SYSCON_PDRUNCFG_PDEN_FRO_MASK) || !(SYSCON->FROCTRL & SYSCON_FROCTRL_HSPDCLK_MASK))
     {
         return 0U;
     }
@@ -651,7 +655,7 @@ uint32_t CLOCK_GetCoreSysClkFreq(void)
 /* Get I2S MCLK Clk */
 uint32_t CLOCK_GetI2SMClkFreq(void)
 {
-    return s_I2S_Mclk_Freq;
+    return g_I2S_Mclk_Freq;
 }
 
 /* Get ASYNC APB Clk */
@@ -761,7 +765,7 @@ uint32_t CLOCK_GetFrgClkFreq(void)
     return freq;
 }
 
-/* Get DMIC Clk */
+/* Get FRG Clk */
 uint32_t CLOCK_GetDmicClkFreq(void)
 {
     uint32_t freq = 0U;
@@ -790,14 +794,12 @@ uint32_t CLOCK_GetDmicClkFreq(void)
             break;
     }
 
-    return freq / ((SYSCON->DMICCLKDIV & 0xffU) + 1U);
+    return freq / ((SYSCON->DMICCLKDIV & 0xffU) + 1U);;
 }
 
 /* Set FRG Clk */
 uint32_t CLOCK_SetFRGClock(uint32_t freq)
 {
-    assert(freq);
-
     uint32_t input = CLOCK_GetFRGInputClock();
     uint32_t mul;
 
@@ -1281,13 +1283,21 @@ static uint32_t findPllMMult(uint32_t ctrlReg, uint32_t mDecReg)
     return mMult;
 }
 
+/* Calculate the powerTimes' power of 2 */
+static uint32_t power2Cal(uint32_t powerTimes)
+{
+    if (powerTimes == 0)
+        return 1;
+    return 2 * power2Cal(powerTimes - 1);
+}
+
 /* Convert the binary to fractional part */
 static double Binary2Fractional(uint32_t binaryPart)
 {
     double fractional = 0;
     for (uint32_t i = 0; i <= 14; i++)
     {
-        fractional += (double)((binaryPart >> i) & 0x1U) / (double)(1 << (15 - i));
+        fractional += (double)((binaryPart >> i) & 0x1U) / (double)power2Cal(15 - i);
     }
     return fractional;
 }
@@ -1428,10 +1438,10 @@ static pll_error_t CLOCK_GetPllConfigInternal(
 
 #if (defined(CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT) && CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT)
 /* Alloct the static buffer for cache. */
-static pll_setup_t s_PllSetupCacheStruct[CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT];
-static uint32_t s_FinHzCache[CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT] = {0};
-static uint32_t s_FoutHzCache[CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT] = {0};
-static uint32_t s_PllSetupCacheIdx = 0U;
+pll_setup_t gPllSetupCacheStruct[CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT];
+uint32_t gFinHzCache[CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT] = {0};
+uint32_t gFoutHzCache[CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT] = {0};
+uint32_t gPllSetupCacheIdx = 0U;
 #endif /* CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT */
 
 /*
@@ -1446,15 +1456,20 @@ static pll_error_t CLOCK_GetPllConfig(
 
     for (i = 0U; i < CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT; i++)
     {
-        if ( (finHz == s_FinHzCache[i]) && (foutHz == s_FoutHzCache[i]) )
+        if ( (finHz == gFinHzCache[i]) && (foutHz == gFoutHzCache[i]) )
         {
             /* Hit the target in cache buffer. */
-            pSetup->pllctrl = s_PllSetupCacheStruct[i].pllctrl;
-            pSetup->pllndec = s_PllSetupCacheStruct[i].pllndec;
-            pSetup->pllpdec = s_PllSetupCacheStruct[i].pllpdec;
-            pSetup->pllmdec = s_PllSetupCacheStruct[i].pllmdec;
+            pSetup->pllctrl = gPllSetupCacheStruct[i].pllctrl;
+            pSetup->pllndec = gPllSetupCacheStruct[i].pllndec;
+            pSetup->pllpdec = gPllSetupCacheStruct[i].pllpdec;
+            pSetup->pllmdec = gPllSetupCacheStruct[i].pllmdec;
             retErr = kStatus_PLL_Success;
         }
+    }
+
+    if (i < CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT)
+    {
+        return retErr;
     }
 #endif /* CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT */
 
@@ -1465,15 +1480,15 @@ static pll_error_t CLOCK_GetPllConfig(
     if (kStatus_PLL_Success == retErr)
     {
         /* Cache the most recent calulation result into buffer. */
-        s_FinHzCache[s_PllSetupCacheIdx] = finHz;
-        s_FoutHzCache[s_PllSetupCacheIdx] = foutHz;
+        gFinHzCache[gPllSetupCacheIdx] = finHz;
+        gFoutHzCache[gPllSetupCacheIdx] = foutHz;
     
-        s_PllSetupCacheStruct[s_PllSetupCacheIdx].pllctrl = pSetup->pllctrl;
-        s_PllSetupCacheStruct[s_PllSetupCacheIdx].pllndec = pSetup->pllndec;
-        s_PllSetupCacheStruct[s_PllSetupCacheIdx].pllpdec = pSetup->pllpdec;
-        s_PllSetupCacheStruct[s_PllSetupCacheIdx].pllmdec = pSetup->pllmdec;
+        gPllSetupCacheStruct[gPllSetupCacheIdx].pllctrl = pSetup->pllctrl;
+        gPllSetupCacheStruct[gPllSetupCacheIdx].pllndec = pSetup->pllndec;
+        gPllSetupCacheStruct[gPllSetupCacheIdx].pllpdec = pSetup->pllpdec;
+        gPllSetupCacheStruct[gPllSetupCacheIdx].pllmdec = pSetup->pllmdec;
         /* Update the index for next available buffer. */
-        s_PllSetupCacheIdx = (s_PllSetupCacheIdx + 1U) % CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT;
+        gPllSetupCacheIdx = (gPllSetupCacheIdx + 1U) % CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT;
     }
 #endif /* CLOCK_USR_CFG_PLL_CONFIG_CACHE_COUNT */
 
@@ -1626,12 +1641,12 @@ uint32_t CLOCK_GetUsbPLLOutFromSetup(const usb_pll_setup_t *pSetup)
     if (pSetup->fbsel == 1U)
        {   
            /*integer_mode: Fout = M*(Fin/N),  Fcco = 2*P*M*(Fin/N) */
-           workRate = (uint64_t)(inPllRate) * (msel + 1U) / (nsel + 1U);
+           workRate = (inPllRate) * (msel + 1U) / (nsel + 1U);
        }
        else
        {
            /* non integer_mode: Fout = M*(Fin/N)/(2*P), Fcco = M * (Fin/N) */
-           workRate = (uint64_t)(inPllRate / (nsel + 1U)) * (msel + 1U) / (2U * (1U << (psel & 3U)));
+           workRate = (inPllRate / (nsel + 1U)) * (msel + 1U) / (2U * SWITCH_USB_PSEL(psel));
        }
    
     return (uint32_t)workRate;
@@ -2206,7 +2221,7 @@ pll_error_t CLOCK_SetUsbPLLFreq(const usb_pll_setup_t *pSetup)
     if (pllfbsel == 1U)
     {   
         /*integer_mode: Fout = M*(Fin/N),  Fcco = 2*P*M*(Fin/N) */
-        fccoHz = (pSetup->inputRate / (nsel + 1U)) * 2 * (msel + 1U) * (1U <<(psel & 3U));
+        fccoHz = (pSetup->inputRate / (nsel + 1U)) * 2 * (msel + 1U) * SWITCH_USB_PSEL(psel) ;
         
         /* USB PLL CCO out rate cannot be lower than this */        
         if (fccoHz < USB_PLL_MIN_CCO_FREQ_MHZ)
@@ -2407,7 +2422,7 @@ bool CLOCK_EnableUsbfs0DeviceClock(clock_usb_src_t src, uint32_t freq)
         uint32_t delay = 100000;
         while (delay --)
         {
-            __ASM("nop");
+            __asm("nop");
         }
     }
     CLOCK_EnableClock(kCLOCK_Usbd0);
@@ -2459,7 +2474,7 @@ bool CLOCK_EnableUsbfs0HostClock(clock_usb_src_t src, uint32_t freq)
         uint32_t delay = 100000;
         while (delay --)
         {
-            __ASM("nop");
+            __asm("nop");
         }
     }
     CLOCK_EnableClock(kCLOCK_Usbhmr0);
@@ -2504,7 +2519,7 @@ bool CLOCK_EnableUsbhs0DeviceClock(clock_usb_src_t src, uint32_t freq)
         delay = 100000;
         while (delay --)
         {
-            __ASM("nop");
+            __asm("nop");
         }    
         usb_pll_setup_t pll_setup = { 0x3FU, 0x01U, 0x03U, false, false, false, 12000000U };
       
@@ -2518,7 +2533,7 @@ bool CLOCK_EnableUsbhs0DeviceClock(clock_usb_src_t src, uint32_t freq)
     delay = 100000;
     while (delay --)
     {
-        __ASM("nop");
+        __asm("nop");
     }
     /* Enable USB1D and USB1RAM */
     CLOCK_EnableClock(kCLOCK_Usbd1);
@@ -2563,7 +2578,7 @@ bool CLOCK_EnableUsbhs0HostClock(clock_usb_src_t src, uint32_t freq)
         delay = 100000;
         while (delay --)
         {
-            __ASM("nop");
+            __asm("nop");
         }    
         usb_pll_setup_t pll_setup = { 0x3FU, 0x01U, 0x03U, false, false, false, 12000000U };
 
@@ -2577,7 +2592,7 @@ bool CLOCK_EnableUsbhs0HostClock(clock_usb_src_t src, uint32_t freq)
     delay = 100000;
     while (delay --)
     {
-        __ASM("nop");
+        __asm("nop");
     }
     /* Enable USBh1 and USB1RAM */
     CLOCK_EnableClock(kCLOCK_Usbh1);

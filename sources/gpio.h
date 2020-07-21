@@ -34,6 +34,7 @@ enum {
 void gpio_set_swcan_mode(uint8_t mode);
 void gpio_set_swcan_enable(uint8_t enable);
 void gpio_set_led(uint8_t led, uint8_t state);
+void gpio_toggle_led(uint8_t led);
 
 
 #endif /* GPIO_H_ */

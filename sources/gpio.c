@@ -43,3 +43,20 @@ void gpio_set_led(uint8_t led, uint8_t state) {
 		break;
 	}
 }
+
+void gpio_toggle_led(uint8_t led) {
+	switch (led) {
+	case GPIO_LED_1:
+		GPIO_PortToggle(GPIO, GPIO_LED_1_PORT, 1<<GPIO_LED_1_PIN);
+		break;
+	case GPIO_LED_2:
+		GPIO_PortToggle(GPIO, GPIO_LED_2_PORT, 1<<GPIO_LED_2_PIN);
+		break;
+	case GPIO_LED_3:
+		GPIO_PortToggle(GPIO, GPIO_LED_3_PORT, 1<<GPIO_LED_3_PIN);
+		break;
+	case GPIO_LED_4:
+		GPIO_PortToggle(GPIO, GPIO_LED_4_PORT, 1<<GPIO_LED_4_PIN);
+		break;
+	}
+}

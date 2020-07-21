@@ -508,11 +508,11 @@ typedef enum _async_clock_src
 *
 */
 
-#define MUX_A(m, choice) (((m) << 0) | (((choice) + 1) << 8))
-#define MUX_B(m, choice) (((m) << 12) | (((choice) + 1) << 20))
-#define MUX_C(m, choice) (((m) << 24) | (((choice) + 1) << 32))
-#define MUX_D(m, choice) (((m) << 36) | (((choice) + 1) << 44))
-#define MUX_E(m, choice) (((m) << 48) | (((choice) + 1) << 56))
+#define MUX_A(m, choice) (((m) << 0) | ((choice + 1) << 8))
+#define MUX_B(m, choice) (((m) << 12) | ((choice + 1) << 20))
+#define MUX_C(m, choice) (((m) << 24) | ((choice + 1) << 32))
+#define MUX_D(m, choice) (((m) << 36) | ((choice + 1) << 44))
+#define MUX_E(m, choice) (((m) << 48) | ((choice + 1) << 56))
 
 #define CM_MAINCLKSELA 0
 #define CM_MAINCLKSELB 1
@@ -825,20 +825,6 @@ void CLOCK_SetClkDiv(clock_div_name_t div_name, uint32_t divided_by_value, bool 
  * @return	Nothing
  */
 void CLOCK_SetFLASHAccessCyclesForFreq(uint32_t iFreq);
-
-/**
- * @brief	Set the frg output frequency.
- * @param	freq	: output frequency
- * @return	0   : the frequency range is out of range.
- *          1   : switch successfully.
- */
-uint32_t CLOCK_SetFRGClock(uint32_t freq);
-
-/*! @brief	Return Frequency of FRG input clock
- *  @return	Frequency value
- */
-uint32_t CLOCK_GetFRGInputClock(void);
-
 /*! @brief	Return Frequency of selected clock
  *  @return	Frequency of selected clock
  */
@@ -980,7 +966,7 @@ uint32_t CLOCK_GetAudioPLLOutClockRate(bool recompute);
  *  the rate computation function can take some time to perform. It
  *  is recommended to use 'false' with the 'recompute' parameter.
  */
-uint32_t CLOCK_GetUsbPLLOutClockRate(bool recompute);
+uint32_t CLOCK_GetUSbPLLOutClockRate(bool recompute);
 
 /*! @brief	Enables and disables PLL bypass mode
  *  @brief	bypass	: true to bypass PLL (PLL output = PLL input, false to disable bypass
@@ -1190,11 +1176,6 @@ uint32_t CLOCK_GetAudioPLLOutFromFractSetup(pll_setup_t *pSetup);
  */
 uint32_t CLOCK_GetUsbPLLOutFromSetup(const usb_pll_setup_t *pSetup);
 
-/*! @brief	Set USB PLL output frequency
- *  @param	rate		: frequency value
- * 
- */
-void CLOCK_SetStoredUsbPLLClockRate(uint32_t rate);
 /*! @brief	Set PLL output based on the passed PLL setup data
  *  @param	pControl	: Pointer to populated PLL control structure to generate setup with
  *  @param	pSetup		: Pointer to PLL setup structure to be filled
