@@ -125,7 +125,7 @@ const ctimer_config_t CTIMER0_config = {
   .prescale = 95999
 };
 const ctimer_match_config_t CTIMER0_Match_0_config = {
-  .matchValue = 100,
+  .matchValue = 200,
   .enableCounterReset = true,
   .enableCounterStop = false,
   .outControl = kCTIMER_Output_NoAction,
@@ -137,55 +137,62 @@ const ctimer_match_config_t CTIMER0_Match_0_config = {
  * Code
  ******************************************************************************/
 static int led_tick = 0;
+static int startup_count = 7;
 static uint64_t last_tx_count[CAN_NUM_CHANNELS];
 static uint64_t last_rx_count[CAN_NUM_CHANNELS];
-static void led_identify() {
-	gpio_set_led(GPIO_LED_1, led_tick%4==0);
-	gpio_set_led(GPIO_LED_2, led_tick%4==1);
-	gpio_set_led(GPIO_LED_3, led_tick%4==2);
-	gpio_set_led(GPIO_LED_4, led_tick%4==3);
-}
-void CTIMER0_IRQHandler() {
-	led_tick++;
-	//led_identify();
 
-	// set LED states
-	if (can_get_rx_count(0) > last_rx_count[0]) {
+static void led_scroll() {
+	gpio_set_led(GPIO_LED_1, led_tick % 6==0);
+	gpio_set_led(GPIO_LED_2, led_tick % 6 == 1 || led_tick % 6 == 5);
+	gpio_set_led(GPIO_LED_3, led_tick % 6 == 2 || led_tick % 6 == 4);
+	gpio_set_led(GPIO_LED_4, led_tick % 6 == 3);
+}
+
+void CTIMER0_IRQHandler() {
+	// show pattern on power-on
+	if (startup_count > 0) {
+		led_scroll();
+		startup_count--;
+	} else {
+		// set LED states
+
+		if (can_get_rx_count(0) > last_rx_count[0]) {
 		gpio_toggle_led(GPIO_LED_1);
 		last_rx_count[0] = can_get_rx_count(0);
-	} else if (can_get_enabled(0)) {
-		gpio_set_led(GPIO_LED_1, 1);
-	} else {
-		gpio_set_led(GPIO_LED_1, 0);
-	}
+		} else if (can_get_enabled(0)) {
+			gpio_set_led(GPIO_LED_1, 1);
+		} else {
+			gpio_set_led(GPIO_LED_1, 0);
+		}
 
-	if (can_get_rx_count(1) > last_rx_count[1]) {
-		gpio_toggle_led(GPIO_LED_3);
-		last_rx_count[1] = can_get_rx_count(1);
-	} else if (can_get_enabled(1)) {
-		gpio_set_led(GPIO_LED_3, 1);
-	} else {
-		gpio_set_led(GPIO_LED_3, 0);
-	}
+		if (can_get_rx_count(1) > last_rx_count[1]) {
+			gpio_toggle_led(GPIO_LED_3);
+			last_rx_count[1] = can_get_rx_count(1);
+		} else if (can_get_enabled(1)) {
+			gpio_set_led(GPIO_LED_3, 1);
+		} else {
+			gpio_set_led(GPIO_LED_3, 0);
+		}
 
-	if (can_get_tx_count(0) > last_tx_count[0]) {
-		gpio_toggle_led(GPIO_LED_2);
-		last_tx_count[0] = can_get_tx_count(0);
-	} else if (can_get_enabled(0)) {
-		gpio_set_led(GPIO_LED_2, 1);
-	} else {
-		gpio_set_led(GPIO_LED_2, 0);
-	}
+		if (can_get_tx_count(0) > last_tx_count[0]) {
+			gpio_toggle_led(GPIO_LED_2);
+			last_tx_count[0] = can_get_tx_count(0);
+		} else if (can_get_enabled(0)) {
+			gpio_set_led(GPIO_LED_2, 1);
+		} else {
+			gpio_set_led(GPIO_LED_2, 0);
+		}
 
-	if (can_get_tx_count(1) > last_tx_count[1]) {
-		gpio_toggle_led(GPIO_LED_4);
-		last_tx_count[1] = can_get_tx_count(1);
-	} else if (can_get_enabled(1)) {
-		gpio_set_led(GPIO_LED_4, 1);
-	} else {
-		gpio_set_led(GPIO_LED_4, 0);
+		if (can_get_tx_count(1) > last_tx_count[1]) {
+			gpio_toggle_led(GPIO_LED_4);
+			last_tx_count[1] = can_get_tx_count(1);
+		} else if (can_get_enabled(1)) {
+			gpio_set_led(GPIO_LED_4, 1);
+		} else {
+			gpio_set_led(GPIO_LED_4, 0);
+		}
 	}
-
+	led_tick++;
 	CTIMER_ClearStatusFlags(CTIMER0_PERIPHERAL, 0xFFFFFFFF);
 }
 
@@ -273,7 +280,6 @@ void main(void)
 	APPInit();
 
 	while (1) {
-
 		APPTask();
 	}
 }
