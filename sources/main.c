@@ -85,6 +85,9 @@ extern uint8_t USB_EnterLowpowerMode(void);
 /* CTIMER0 interrupt vector ID (number). */
 #define CTIMER0_TIMER_IRQN CTIMER0_IRQn
 
+// steps per LED scroll animation
+#define TICKS_PER_SCROLL 7
+
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
@@ -137,7 +140,8 @@ const ctimer_match_config_t CTIMER0_Match_0_config = {
  * Code
  ******************************************************************************/
 static int led_tick = 0;
-static int startup_count = 7;
+// initialize to perform one scroll on power-on
+static int startup_counter = TICKS_PER_SCROLL;
 static uint64_t last_tx_count[CAN_NUM_CHANNELS];
 static uint64_t last_rx_count[CAN_NUM_CHANNELS];
 
@@ -149,13 +153,20 @@ static void led_scroll() {
 }
 
 void CTIMER0_IRQHandler() {
-	// show pattern on power-on
-	if (startup_count > 0) {
+	if (startup_counter > 0) {
+		// do startup animation
 		led_scroll();
-		startup_count--;
+		startup_counter--;
+	} else if (can_get_identify(0)) {
+		// handle identify for channel 0
+		gpio_toggle_led(GPIO_LED_1);
+		gpio_toggle_led(GPIO_LED_2);
+	} else if (can_get_identify(1)) {
+		// handle identify for channel 1
+		gpio_toggle_led(GPIO_LED_3);
+		gpio_toggle_led(GPIO_LED_4);
 	} else {
-		// set LED states
-
+		// set LED states for normal operation
 		if (can_get_rx_count(0) > last_rx_count[0]) {
 		gpio_toggle_led(GPIO_LED_1);
 		last_rx_count[0] = can_get_rx_count(0);
@@ -177,7 +188,7 @@ void CTIMER0_IRQHandler() {
 		if (can_get_tx_count(0) > last_tx_count[0]) {
 			gpio_toggle_led(GPIO_LED_2);
 			last_tx_count[0] = can_get_tx_count(0);
-		} else if (can_get_enabled(0)) {
+		} else if (can_get_enabled(0) && !can_get_monitor_mode(0)) {
 			gpio_set_led(GPIO_LED_2, 1);
 		} else {
 			gpio_set_led(GPIO_LED_2, 0);
@@ -186,7 +197,7 @@ void CTIMER0_IRQHandler() {
 		if (can_get_tx_count(1) > last_tx_count[1]) {
 			gpio_toggle_led(GPIO_LED_4);
 			last_tx_count[1] = can_get_tx_count(1);
-		} else if (can_get_enabled(1)) {
+		} else if (can_get_enabled(1) && !can_get_monitor_mode(1)) {
 			gpio_set_led(GPIO_LED_4, 1);
 		} else {
 			gpio_set_led(GPIO_LED_4, 0);

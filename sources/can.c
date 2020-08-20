@@ -23,7 +23,8 @@ CAN0,
 CAN1 };
 static mcan_timing_config_t timing_configs[CAN_NUM_CHANNELS];
 static uint8_t channel_enabled[CAN_NUM_CHANNELS];
-
+static uint8_t monitor_mode[CAN_NUM_CHANNELS];
+static uint8_t identify[CAN_NUM_CHANNELS];
 static uint64_t rx_count[CAN_NUM_CHANNELS];
 static uint64_t tx_count[CAN_NUM_CHANNELS];
 
@@ -74,6 +75,26 @@ uint8_t can_get_enabled(uint8_t channel) {
 	return channel_enabled[channel];
 }
 
+void can_set_identify(uint8_t channel, uint8_t enable) {
+	if (channel >= CAN_NUM_CHANNELS) {
+		return;
+	}
+	identify[channel] = enable;
+}
+uint8_t can_get_identify(uint8_t channel) {
+	if (channel >= CAN_NUM_CHANNELS) {
+		return 0;
+	}
+	return identify[channel];
+}
+
+uint8_t can_get_monitor_mode(uint8_t channel) {
+	if (channel >= CAN_NUM_CHANNELS) {
+		return 0;
+	}
+	return monitor_mode[channel];
+}
+
 int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
 	if (channel >= CAN_NUM_CHANNELS) {
 		return -1;
@@ -101,9 +122,10 @@ int can_start(uint8_t channel, uint32_t flags) {
 	can_dev = can_devs[channel];
 
 	MCAN_GetDefaultConfig(&config);
-	//config.enableBusMon = true; // REMOVE ME
+	monitor_mode[channel] = 0;
 	if (flags & GS_CAN_FEATURE_LISTEN_ONLY) {
 		config.enableBusMon = true;
+		monitor_mode[channel] = 1;
 	}
 	if (flags & GS_CAN_FEATURE_LOOP_BACK) {
 		config.enableLoopBackExt = true;

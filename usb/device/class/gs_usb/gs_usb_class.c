@@ -270,7 +270,7 @@ usb_status_t USB_DeviceProcessVendorRequest(usb_device_handle handle,
 		break;
 	case GS_USB_BREQ_IDENTIFY:
 		memcpy(&tmp_32, control_request->buffer, sizeof(tmp_32));
-		// TODO identify
+		can_set_identify(channel, control_request->buffer[0]);
 		break;
 	case GS_USB_BREQ_BERR:
 		// TODO ?
