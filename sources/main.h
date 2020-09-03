@@ -39,8 +39,7 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define TX_FRAME_BUF_SIZE 5000
-#define RX_FRAME_BUF_SIZE 5000
+#define RX_FRAME_BUF_SIZE 1000
 
 int rx_enqueue(uint8_t channel, mcan_rx_buffer_frame_t *frame);
 int rx_enqueue_echo(struct gs_host_frame *frame);

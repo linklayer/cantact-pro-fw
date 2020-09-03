@@ -112,7 +112,7 @@ static const struct gs_device_config device_config = { 0, // reserved 1
 static const struct gs_device_bt_const can_dev_bt_const = {
 GS_CAN_FEATURE_LISTEN_ONLY  // supported features
 | GS_CAN_FEATURE_LOOP_BACK | GS_CAN_FEATURE_HW_TIMESTAMP
-		| GS_CAN_FEATURE_IDENTIFY,
+		| GS_CAN_FEATURE_IDENTIFY | GS_CAN_FEATURE_FD,
 		24000000, // can timing base clock
 		1, // tseg1 min
 		16, // tseg1 max
@@ -256,6 +256,19 @@ usb_status_t USB_DeviceProcessVendorRequest(usb_device_handle handle,
 			error = kStatus_USB_InvalidParameter;
 		}
 		break;
+	case GS_USB_BREQ_DATA_BITTIMING:
+		bit_timing = (struct gs_device_bittiming *) control_request->buffer;
+
+		// for NXP driver, seg1 = phase_seg1 + prop_seg
+		mcan_timing_config.seg1 = bit_timing->phase_seg1 + bit_timing->prop_seg;
+		mcan_timing_config.seg2 = bit_timing->phase_seg2;
+		mcan_timing_config.preDivider = bit_timing->brp;
+		mcan_timing_config.rJumpwidth = bit_timing->sjw;
+
+		if (can_set_data_timing(channel, &mcan_timing_config) != 0) {
+			error = kStatus_USB_InvalidParameter;
+		}
+		break;
 	case GS_USB_BREQ_MODE:
 		mode = (struct gs_device_mode *) control_request->buffer;
 		if (mode->mode == GS_CAN_MODE_RESET) {
@@ -368,7 +381,7 @@ usb_status_t USB_DeviceBulkOut(usb_device_handle handle,
 
 	struct gs_host_frame *frame = (struct gs_host_frame *) message->buffer;
 	//tx_enqueue(frame);
-	can_send(frame->channel, frame->echo_id, frame->can_id, frame->can_dlc,
+	can_send(frame->channel, frame->echo_id, frame->can_id, frame->flags, frame->can_dlc,
 			frame->data);
 	// echo the frame back to the host
 	rx_enqueue_echo(frame);

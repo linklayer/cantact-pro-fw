@@ -110,8 +110,6 @@ BOARD_DbgConsole_Init(void);
  * Variables
  ******************************************************************************/
 
-static struct gs_host_frame tx_frames[TX_FRAME_BUF_SIZE];
-static uint32_t tx_frames_index;
 static struct gs_host_frame rx_frames[RX_FRAME_BUF_SIZE];
 static uint32_t rx_frames_index;
 
@@ -295,12 +293,6 @@ void main(void)
 	}
 }
 
-int tx_enqueue(struct gs_host_frame *frame) {
-	tx_frames_index++;
-	memcpy(&tx_frames[tx_frames_index], frame, sizeof(struct gs_host_frame));
-	return 0;
-}
-
 int rx_enqueue(uint8_t channel, mcan_rx_buffer_frame_t *frame) {
 	uint32_t primask;
 
@@ -316,8 +308,22 @@ int rx_enqueue(uint8_t channel, mcan_rx_buffer_frame_t *frame) {
 		// standard ID, bit shift
 		rx_frames[rx_frames_index].can_id = (frame->id) >> STDID_OFFSET;
 	}
+
 	rx_frames[rx_frames_index].can_dlc = frame->dlc;
-	memcpy(rx_frames[rx_frames_index].data, frame->data, frame->dlc);
+
+	rx_frames[rx_frames_index].flags = 0;
+	if (frame->fdf) {
+		memcpy(rx_frames[rx_frames_index].data, frame->data, can_dlc2len(frame->dlc));
+		rx_frames[rx_frames_index].flags |= GS_CAN_FLAG_FD;
+	} else {
+		memcpy(rx_frames[rx_frames_index].data, frame->data, frame->dlc);
+	}
+	if (frame->brs) {
+		rx_frames[rx_frames_index].flags |= GS_CAN_FLAG_BRS;
+	}
+	if (frame->esi) {
+		rx_frames[rx_frames_index].flags |= GS_CAN_FLAG_ESI;
+	}
 	rx_frames_index++;
 
 	EnableGlobalIRQ(primask);

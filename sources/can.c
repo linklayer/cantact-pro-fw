@@ -22,6 +22,7 @@ static CAN_Type* can_devs[CAN_NUM_CHANNELS] = {
 CAN0,
 CAN1 };
 static mcan_timing_config_t timing_configs[CAN_NUM_CHANNELS];
+static mcan_timing_config_t data_timing_configs[CAN_NUM_CHANNELS];
 static uint8_t channel_enabled[CAN_NUM_CHANNELS];
 static uint8_t monitor_mode[CAN_NUM_CHANNELS];
 static uint8_t identify[CAN_NUM_CHANNELS];
@@ -110,6 +111,64 @@ int can_set_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
 	return 0;
 }
 
+int can_set_data_timing(uint8_t channel, mcan_timing_config_t *timing_config) {
+	if (channel >= CAN_NUM_CHANNELS) {
+		return -1;
+	}
+	memcpy(&data_timing_configs[channel], timing_config, sizeof(mcan_timing_config_t));
+
+	// hardware expects these to be one less than value
+	data_timing_configs[channel].preDivider -= 1;
+	data_timing_configs[channel].seg1 -= 1;
+	data_timing_configs[channel].seg2 -= 1;
+	data_timing_configs[channel].rJumpwidth -= 1;
+
+	return 0;
+}
+
+/* Data Length Code       9 10 11 12 13 14 15
+    Number of data bytes 12 16 20 24 32 48 64 */
+int can_len2dlc(uint8_t len) {
+	if (len <= 8) {
+		return len;
+	} else if (len <= 12) {
+		return 9;
+	} else if (len <= 16) {
+		return 10;
+	} else if (len <= 20) {
+		return 11;
+	} else if (len <= 24) {
+		return 12;
+	} else if (len <= 32) {
+		return 13;
+	} else if (len <= 48) {
+		return 14;
+	} else if (len <= 64) {
+		return 15;
+	}
+	return 0;
+}
+int can_dlc2len(uint8_t dlc) {
+	if (dlc < 8) {
+		return dlc;
+	} else if (dlc == 9) {
+		return 12;
+	} else if (dlc == 10) {
+		return 16;
+	} else if (dlc == 11) {
+		return 20;
+	} else if (dlc == 12) {
+		return 24;
+	} else if (dlc == 13) {
+		return 32;
+	} else if (dlc == 14) {
+		return 48;
+	} else if (dlc == 15) {
+		return 64;
+	}
+	return 0;
+}
+
 int can_start(uint8_t channel, uint32_t flags) {
 	mcan_config_t config;
 	mcan_rx_fifo_config_t rxFifo0;
@@ -130,6 +189,9 @@ int can_start(uint8_t channel, uint32_t flags) {
 	if (flags & GS_CAN_FEATURE_LOOP_BACK) {
 		config.enableLoopBackExt = true;
 	}
+	if (flags & GS_CAN_MODE_FD) {
+		config.enableCanfdSwitch = true;
+	}
 
 	if (can_dev == CAN0) {
 		MCAN_Init(can_dev, &config, MCAN0_CLK_FREQ);
@@ -142,7 +204,7 @@ int can_start(uint8_t channel, uint32_t flags) {
 	// set timing configuration
 	// this must happen after MCAN_Init or it will be overridden
 	MCAN_SetArbitrationTimingConfig(can_dev, &timing_configs[channel]);
-	MCAN_SetDataTimingConfig(can_dev, &timing_configs[channel]);
+	MCAN_SetDataTimingConfig(can_dev, &data_timing_configs[channel]);
 
 	/* Set Message RAM base address and clear to avoid BEU/BEC error. */
 	MCAN_SetMsgRAMBase(can_dev, CAN_RAM_BASE);
@@ -163,7 +225,7 @@ int can_start(uint8_t channel, uint32_t flags) {
 	rxFifo0.elementSize = 1U;
 	rxFifo0.watermark = 0;
 	rxFifo0.opmode = kMCAN_FifoBlocking;
-	rxFifo0.datafieldSize = kMCAN_8ByteDatafield;
+	rxFifo0.datafieldSize = kMCAN_64ByteDatafield;
 	MCAN_SetRxFifo0Config(can_dev, &rxFifo0);
 
 	/* TX buffer config */
@@ -174,7 +236,7 @@ int can_start(uint8_t channel, uint32_t flags) {
 	}
 	txBuffer.dedicatedSize = 16U;
 	txBuffer.fqSize = 16U;
-	txBuffer.datafieldSize = kMCAN_8ByteDatafield;
+	txBuffer.datafieldSize = kMCAN_64ByteDatafield;
 	MCAN_SetTxBufferConfig(can_dev, &txBuffer);
 
 	/* Enable RX fifo0 new message interrupt using interrupt line 0. */
@@ -205,7 +267,7 @@ int can_stop(uint8_t channel) {
 	return 0;
 }
 
-int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc,
+int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t flags, uint8_t can_dlc,
 		uint8_t *can_data) {
 	CAN_Type* can_dev;
 	mcan_handle_t handle;
@@ -242,11 +304,25 @@ int can_send(uint8_t channel, uint8_t buf, uint32_t can_id, uint8_t can_dlc,
 	}
 
 	frame.dlc = can_dlc;
-	frame.size = can_dlc;
+	frame.size = can_dlc2len(can_dlc);
 	frame.data = can_data;
 
-	frame.fdf = 0;
-	frame.brs = 0;
+	if (flags & GS_CAN_FLAG_FD) {
+		frame.fdf = 1;
+	} else {
+		frame.fdf = 0;
+
+	}
+	if (flags & GS_CAN_FLAG_BRS) {
+		frame.brs = 1;
+	} else {
+		frame.brs = 0;
+	}
+	if (flags & GS_CAN_FLAG_ESI) {
+		frame.esi = 1;
+	} else {
+		frame.esi = 0;
+	}
 
 	xfer.frame = &frame;
 	xfer.bufferIdx = buf;

@@ -17,6 +17,7 @@ enum gs_usb_breq {
 	GS_USB_BREQ_DEVICE_CONFIG,
 	GS_USB_BREQ_TIMESTAMP,
 	GS_USB_BREQ_IDENTIFY,
+	GS_USB_BREQ_DATA_BITTIMING,
 };
 
 enum gs_can_mode {
@@ -62,6 +63,7 @@ struct gs_device_config {
 #define GS_CAN_MODE_LOOP_BACK            BIT(1)
 #define GS_CAN_MODE_TRIPLE_SAMPLE        BIT(2)
 #define GS_CAN_MODE_ONE_SHOT             BIT(3)
+#define GS_CAN_MODE_FD             	 	 BIT(4)
 
 struct gs_device_mode {
 	uint32_t mode;
@@ -93,6 +95,7 @@ struct gs_identify_mode {
 #define GS_CAN_FEATURE_ONE_SHOT         BIT(3)
 #define GS_CAN_FEATURE_HW_TIMESTAMP     BIT(4)
 #define GS_CAN_FEATURE_IDENTIFY         BIT(5)
+#define GS_CAN_FEATURE_FD         		BIT(6)
 
 struct gs_device_bt_const {
 	uint32_t feature;
@@ -107,7 +110,10 @@ struct gs_device_bt_const {
 	uint32_t brp_inc;
 };
 
-#define GS_CAN_FLAG_OVERFLOW 1
+#define GS_CAN_FLAG_OVERFLOW BIT(0)
+#define GS_CAN_FLAG_FD 	     BIT(1)
+#define GS_CAN_FLAG_BRS	     BIT(2)
+#define GS_CAN_FLAG_ESI	     BIT(3)
 
 struct gs_host_frame {
 	uint32_t echo_id;
@@ -118,7 +124,7 @@ struct gs_host_frame {
 	uint8_t flags;
 	uint8_t reserved;
 
-	uint8_t data[8];
+	uint8_t data[64];
 };
 
 struct gs_usb_dev {
