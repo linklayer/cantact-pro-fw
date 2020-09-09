@@ -58,12 +58,14 @@ struct gs_device_config {
 	uint32_t hw_version;
 };
 
-#define GS_CAN_MODE_NORMAL               0
-#define GS_CAN_MODE_LISTEN_ONLY          BIT(0)
-#define GS_CAN_MODE_LOOP_BACK            BIT(1)
-#define GS_CAN_MODE_TRIPLE_SAMPLE        BIT(2)
-#define GS_CAN_MODE_ONE_SHOT             BIT(3)
-#define GS_CAN_MODE_FD             	 	 BIT(4)
+#define GS_CAN_MODE_NORMAL               		0
+#define GS_CAN_MODE_LISTEN_ONLY          		BIT(0)
+#define GS_CAN_MODE_LOOP_BACK            		BIT(1)
+#define GS_CAN_MODE_TRIPLE_SAMPLE        		BIT(2)
+#define GS_CAN_MODE_ONE_SHOT             		BIT(3)
+#define GS_CAN_MODE_HW_TIMESTAMP         		BIT(4)
+#define GS_CAN_MODE_PAD_PKTS_TO_MAX_PKT_SIZE 	BIT(7)
+#define GS_CAN_MODE_FD             	 	 		BIT(8)
 
 struct gs_device_mode {
 	uint32_t mode;
@@ -89,13 +91,15 @@ struct gs_identify_mode {
 };
 
 #define BIT(X) (1<<X)
-#define GS_CAN_FEATURE_LISTEN_ONLY      BIT(0)
-#define GS_CAN_FEATURE_LOOP_BACK        BIT(1)
-#define GS_CAN_FEATURE_TRIPLE_SAMPLE    BIT(2)
-#define GS_CAN_FEATURE_ONE_SHOT         BIT(3)
-#define GS_CAN_FEATURE_HW_TIMESTAMP     BIT(4)
-#define GS_CAN_FEATURE_IDENTIFY         BIT(5)
-#define GS_CAN_FEATURE_FD         		BIT(6)
+#define GS_CAN_FEATURE_LISTEN_ONLY      		BIT(0)
+#define GS_CAN_FEATURE_LOOP_BACK        		BIT(1)
+#define GS_CAN_FEATURE_TRIPLE_SAMPLE    		BIT(2)
+#define GS_CAN_FEATURE_ONE_SHOT         		BIT(3)
+#define GS_CAN_FEATURE_HW_TIMESTAMP     		BIT(4)
+#define GS_CAN_FEATURE_IDENTIFY         		BIT(5)
+#define GS_CAN_FEATURE_USER_ID					BIT(6)
+#define GS_CAN_FEATURE_PAD_PKTS_TO_MAX_PKT_SIZE BIT(7)
+#define GS_CAN_FEATURE_FD         				BIT(8)
 
 struct gs_device_bt_const {
 	uint32_t feature;
@@ -125,6 +129,18 @@ struct gs_host_frame {
 	uint8_t reserved;
 
 	uint8_t data[64];
+};
+
+struct gs_host_frame_non_fd {
+	uint32_t echo_id;
+	uint32_t can_id;
+
+	uint8_t can_dlc;
+	uint8_t channel;
+	uint8_t flags;
+	uint8_t reserved;
+
+	uint8_t data[8];
 };
 
 struct gs_usb_dev {

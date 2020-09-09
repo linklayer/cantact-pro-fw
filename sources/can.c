@@ -149,7 +149,7 @@ int can_len2dlc(uint8_t len) {
 	return 0;
 }
 int can_dlc2len(uint8_t dlc) {
-	if (dlc < 8) {
+	if (dlc <= 8) {
 		return dlc;
 	} else if (dlc == 9) {
 		return 12;
@@ -182,11 +182,11 @@ int can_start(uint8_t channel, uint32_t flags) {
 
 	MCAN_GetDefaultConfig(&config);
 	monitor_mode[channel] = 0;
-	if (flags & GS_CAN_FEATURE_LISTEN_ONLY) {
+	if (flags & GS_CAN_MODE_LISTEN_ONLY) {
 		config.enableBusMon = true;
 		monitor_mode[channel] = 1;
 	}
-	if (flags & GS_CAN_FEATURE_LOOP_BACK) {
+	if (flags & GS_CAN_MODE_LOOP_BACK) {
 		config.enableLoopBackExt = true;
 	}
 	if (flags & GS_CAN_MODE_FD) {

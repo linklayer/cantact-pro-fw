@@ -243,8 +243,14 @@ void APPTask(void) {
 	while (rx_frames_index > 0) {
 		primask = DisableGlobalIRQ();
 		rx_frames_index--;
-		usb_send((uint8_t*) &rx_frames[rx_frames_index],
-				sizeof(struct gs_host_frame));
+		if (rx_frames[rx_frames_index].flags & GS_CAN_FLAG_FD) {
+			usb_send((uint8_t*) &rx_frames[rx_frames_index],
+					sizeof(struct gs_host_frame));
+		} else {
+			// send correct size for non-FD frame
+			usb_send((uint8_t*) &rx_frames[rx_frames_index],
+					sizeof(struct gs_host_frame_non_fd));
+		}
 		EnableGlobalIRQ(primask);
 	}
 }

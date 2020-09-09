@@ -110,9 +110,11 @@ static const struct gs_device_config device_config = { 0, // reserved 1
 
 // bit timing constraints
 static const struct gs_device_bt_const can_dev_bt_const = {
-GS_CAN_FEATURE_LISTEN_ONLY  // supported features
-| GS_CAN_FEATURE_LOOP_BACK | GS_CAN_FEATURE_HW_TIMESTAMP
-		| GS_CAN_FEATURE_IDENTIFY | GS_CAN_FEATURE_FD,
+		// supported features
+		GS_CAN_FEATURE_LISTEN_ONLY |
+			GS_CAN_FEATURE_LOOP_BACK |
+			GS_CAN_FEATURE_IDENTIFY |
+			GS_CAN_FEATURE_FD,
 		24000000, // can timing base clock
 		1, // tseg1 min
 		16, // tseg1 max
