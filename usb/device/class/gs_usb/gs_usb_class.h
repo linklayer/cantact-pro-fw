@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2018 Eric Evenchick <eric@evenchick.com>
 // SPDX-License-Identifier: MIT
 /*
  * gs_usb_class.h
