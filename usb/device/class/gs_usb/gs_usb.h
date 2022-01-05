@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * gs_usb.h
  */
