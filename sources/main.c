@@ -144,7 +144,7 @@ static uint64_t last_tx_count[CAN_NUM_CHANNELS];
 static uint64_t last_rx_count[CAN_NUM_CHANNELS];
 
 static void led_scroll() {
-	gpio_set_led(GPIO_LED_1, led_tick % 6==0);
+	gpio_set_led(GPIO_LED_1, led_tick % 6 == 0);
 	gpio_set_led(GPIO_LED_2, led_tick % 6 == 1 || led_tick % 6 == 5);
 	gpio_set_led(GPIO_LED_3, led_tick % 6 == 2 || led_tick % 6 == 4);
 	gpio_set_led(GPIO_LED_4, led_tick % 6 == 3);
@@ -220,7 +220,8 @@ void APPInit(void) {
 	gpio_set_led(GPIO_LED_3, 0);
 	gpio_set_led(GPIO_LED_4, 0);
 
-	gpio_set_swcan_enable(0);
+	gpio_set_swcan_mode(SWCAN_MODE_HVWAKE);
+	gpio_set_swcan_enable(SWCAN_ENABLE);
 
 	/* CTIMER0 peripheral initialization */
 	CTIMER_Init(CTIMER0_PERIPHERAL, &CTIMER0_config);
